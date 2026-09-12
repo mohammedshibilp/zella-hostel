@@ -155,7 +155,7 @@ def test_admission_and_bed_collision(staff_headers):
 # 5. BOOKING LIFECYCLE
 def test_booking_workflow(staff_headers):
     rooms_res = client.get(f"{settings.API_V1_STR}/rooms", headers=staff_headers)
-    target_room = rooms_res.json()[1]
+    target_room = [r for r in rooms_res.json() if r["vacant_count"] > 0][0]
     target_bed = [b for b in target_room["beds"] if not b["is_occupied"]][0]
 
     booking_payload = {
@@ -342,15 +342,25 @@ def test_exact_23_initial_rooms(staff_headers):
 # 11. OVERLAPPING BOOKING COLLISION REJECTION
 def test_overlapping_booking_rejection(staff_headers):
     rooms_res = client.get(f"{settings.API_V1_STR}/rooms", headers=staff_headers)
-    room = [r for r in rooms_res.json() if r["floor"] == 2][0]
-    bed = [b for b in room["beds"] if not b["is_occupied"]][0]
+    target_room = None
+    target_bed = None
+    for r in rooms_res.json():
+        for b in r["beds"]:
+            if not b["is_occupied"] and b.get("status") == "Available":
+                target_room = r
+                target_bed = b
+                break
+        if target_bed:
+            break
+
+    assert target_room is not None and target_bed is not None
 
     b1_payload = {
         "guest_name": "Applicant One",
         "contact_no": "+91 9111122222",
         "email": "applicant1@example.com",
-        "room_id": room["id"],
-        "bed_id": bed["id"],
+        "room_id": target_room["id"],
+        "bed_id": target_bed["id"],
         "booking_date": str(date.today()),
         "check_in_date": str(date.today()),
         "advance_amount": 1000.0,
@@ -363,8 +373,8 @@ def test_overlapping_booking_rejection(staff_headers):
         "guest_name": "Applicant Two",
         "contact_no": "+91 9333344444",
         "email": "applicant2@example.com",
-        "room_id": room["id"],
-        "bed_id": bed["id"],
+        "room_id": target_room["id"],
+        "bed_id": target_bed["id"],
         "booking_date": str(date.today()),
         "check_in_date": str(date.today()),
         "advance_amount": 1000.0,
@@ -372,6 +382,10 @@ def test_overlapping_booking_rejection(staff_headers):
     b2_res = client.post(f"{settings.API_V1_STR}/bookings", json=b2_payload, headers=staff_headers)
     assert b2_res.status_code == 400
     assert "already booked" in b2_res.json()["detail"].lower()
+
+    # Clean up booking
+    b1_id = b1_res.json()["id"]
+    client.patch(f"{settings.API_V1_STR}/bookings/{b1_id}/cancel", headers=staff_headers)
 
 
 # 12. COMPLETE END-TO-END BUSINESS FLOW
