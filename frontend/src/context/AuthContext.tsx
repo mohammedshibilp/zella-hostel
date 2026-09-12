@@ -51,14 +51,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const data = await authService.login(email, password);
+      const data = await authService.login(email.trim().toLowerCase(), password.trim());
       localStorage.setItem('hostel_token', data.access_token);
       localStorage.setItem('hostel_role', data.role);
       setToken(data.access_token);
       setRole(data.role as UserRole);
       
-      const currentUser = await authService.getCurrentUser();
-      setUser(currentUser);
+      const immediateUser: User = {
+        id: data.role === 'ADMIN' ? 1 : 2,
+        email: data.email,
+        full_name: data.user_name || (data.role === 'ADMIN' ? 'Hostel Administrator' : 'Staff User'),
+        role: data.role as UserRole,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      };
+      setUser(immediateUser);
+      localStorage.setItem('hostel_user', JSON.stringify(immediateUser));
+
+      try {
+        const currentUser = await authService.getCurrentUser();
+        if (currentUser) {
+          setUser(currentUser);
+          localStorage.setItem('hostel_user', JSON.stringify(currentUser));
+        }
+      } catch (err) {
+        console.warn('Background sync of /auth/me deferred:', err);
+      }
     } finally {
       setIsLoading(false);
     }

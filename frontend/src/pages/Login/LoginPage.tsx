@@ -29,11 +29,21 @@ export const LoginPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await login(email, password);
+      await login(email.trim().toLowerCase(), password.trim());
       success('Welcome back! You have successfully signed in.', 'Authentication Successful');
       navigate('/dashboard');
     } catch (err: any) {
-      const msg = err.response?.data?.detail || 'Invalid email or password. Please try again.';
+      console.error('Login submission failed:', err);
+      let msg = 'Invalid email or password. Please try again.';
+      if (err.response?.data?.detail) {
+        if (typeof err.response.data.detail === 'string') {
+          msg = err.response.data.detail;
+        } else if (Array.isArray(err.response.data.detail)) {
+          msg = err.response.data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+        }
+      } else if (err.message && err.message !== 'Request failed with status code 401') {
+        msg = `Connection issue: ${err.message}. Please verify the server is running.`;
+      }
       setError(msg);
       toastError(msg, 'Login Failed');
     } finally {
