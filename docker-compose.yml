@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: zella_hostel_db
+    environment:
+      POSTGRES_USER: hostel_admin
+      POSTGRES_PASSWORD: hostel_secure_password_2026
+      POSTGRES_DB: hostel_management
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hostel_admin -d hostel_management"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: zella_hostel_backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://hostel_admin:hostel_secure_password_2026@postgres:5432/hostel_management
+      SECRET_KEY: zella_hostel_super_secret_jwt_key_production_2026_purple_orange
+      ACCESS_TOKEN_EXPIRE_MINUTES: 1440
+      CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: zella_hostel_frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
