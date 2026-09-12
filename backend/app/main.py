@@ -25,6 +25,11 @@ from app.api.reports import router as reports_router
 async def lifespan(app: FastAPI):
     # Auto-create tables on startup if not present
     Base.metadata.create_all(bind=engine)
+    try:
+        from app.database.seed import seed_database
+        seed_database()
+    except Exception as e:
+        pass
     yield
 
 
