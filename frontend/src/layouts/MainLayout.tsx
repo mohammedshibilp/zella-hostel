@@ -21,8 +21,9 @@ import {
   LogOut,
   Bell,
   Shield,
-  Building2,
 } from 'lucide-react';
+import zellaLogo from '../assets/zella_logo.png';
+import zellaIcon from '../assets/zella_icon.png';
 
 interface NavItem {
   name: string;
@@ -132,25 +133,44 @@ export const MainLayout: React.FC = () => {
         }`}
       >
         {/* Sidebar Brand Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100 shrink-0">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-900 flex items-center justify-center text-white shrink-0 shadow-sm shadow-primary/30">
-              <Building2 className="w-5 h-5 text-secondary" />
+        <div
+          className={`h-16 flex items-center border-b border-slate-100 shrink-0 ${
+            isCollapsed ? 'justify-between px-2.5' : 'justify-between px-4'
+          }`}
+        >
+          {isCollapsed ? (
+            <div className="w-full flex items-center justify-between">
+              <img
+                src={zellaIcon}
+                alt="Zella Emblem"
+                className="w-8 h-8 object-contain shrink-0"
+              />
+              <button
+                onClick={() => setIsCollapsed(false)}
+                className="p-1 text-slate-400 hover:text-navy-900 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
+                title="Expand sidebar"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-            {!isCollapsed && (
-              <div className="flex flex-col truncate">
-                <span className="font-bold text-base leading-tight text-navy-900 tracking-tight">ZELLA HOSTEL</span>
-                <span className="text-[10px] uppercase font-semibold text-secondary tracking-widest">Enterprise</span>
+          ) : (
+            <>
+              <div className="flex items-center overflow-hidden min-w-0 pr-2">
+                <img
+                  src={zellaLogo}
+                  alt="Zella Ladies Hostel"
+                  className="h-10 w-auto max-w-[170px] object-contain object-left"
+                />
               </div>
-            )}
-          </div>
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 text-slate-400 hover:text-navy-900 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
+              <button
+                onClick={() => setIsCollapsed(true)}
+                className="p-1.5 text-slate-400 hover:text-navy-900 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
+                title="Collapse sidebar"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Scrollable Nav Items (internal to sidebar only) */}
@@ -199,15 +219,16 @@ export const MainLayout: React.FC = () => {
         }`}
       >
         <div className="h-16 flex items-center justify-between px-5 border-b border-slate-100 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-secondary font-bold">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <span className="font-bold text-base text-navy-900">ZELLA HOSTEL</span>
+          <div className="flex items-center overflow-hidden min-w-0 pr-2">
+            <img
+              src={zellaLogo}
+              alt="Zella Ladies Hostel"
+              className="h-10 w-auto max-w-[185px] object-contain object-left"
+            />
           </div>
           <button
             onClick={() => setIsMobileOpen(false)}
-            className="p-1.5 text-slate-400 hover:text-navy-900 rounded-lg"
+            className="p-1.5 text-slate-400 hover:text-navy-900 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

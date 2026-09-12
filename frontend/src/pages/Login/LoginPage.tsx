@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Building2, Lock, Mail, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import zellaLogo from '../../assets/zella_logo.png';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -56,11 +57,12 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Brand Banner */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-16 h-16 rounded-[22px] bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 mb-4 ring-8 ring-primary/10">
-            <Building2 className="w-9 h-9 text-secondary" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-navy-900">ZELLA HOSTEL</h1>
-          <p className="text-xs uppercase font-semibold text-secondary tracking-widest mt-1">
+          <img
+            src={zellaLogo}
+            alt="Zella Ladies Hostel"
+            className="h-16 w-auto max-w-[280px] object-contain mb-3 drop-shadow-xs"
+          />
+          <p className="text-xs uppercase font-semibold text-secondary tracking-widest">
             Enterprise Management System
           </p>
         </div>
