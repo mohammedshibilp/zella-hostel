@@ -100,8 +100,8 @@ def test_admission_and_bed_collision(staff_headers):
     # Get available room and bed
     rooms_res = client.get(f"{settings.API_V1_STR}/rooms", headers=staff_headers)
     rooms = rooms_res.json()
-    first_room = rooms[0]
-    vacant_bed = [b for b in first_room["beds"] if not b["is_occupied"]][0]
+    room_with_vacant = next(r for r in rooms if any(not b["is_occupied"] for b in r["beds"]))
+    vacant_bed = next(b for b in room_with_vacant["beds"] if not b["is_occupied"])
 
     admission_payload = {
         "guest_name": "Deepak Chopra",
@@ -113,7 +113,7 @@ def test_admission_and_bed_collision(staff_headers):
         "address": "12 Civil Lines, Jaipur",
         "id_proof_type": "Aadhar Card",
         "id_proof_number": "1234-5678-9012",
-        "room_id": first_room["id"],
+        "room_id": room_with_vacant["id"],
         "bed_id": vacant_bed["id"],
         "admission_date": str(date.today()),
         "security_deposit": 5000.0,
@@ -147,7 +147,7 @@ def test_admission_and_bed_collision(staff_headers):
     assert checkout_res.json()["status"] == "CheckedOut"
 
     # Verify bed is now available again
-    room_check = client.get(f"{settings.API_V1_STR}/rooms/{first_room['id']}", headers=staff_headers)
+    room_check = client.get(f"{settings.API_V1_STR}/rooms/{room_with_vacant['id']}", headers=staff_headers)
     released_bed = [b for b in room_check.json()["beds"] if b["id"] == vacant_bed["id"]][0]
     assert released_bed["is_occupied"] is False
 

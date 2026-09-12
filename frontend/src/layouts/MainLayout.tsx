@@ -19,7 +19,6 @@ import {
   Menu,
   X,
   LogOut,
-  Bell,
   Shield,
 } from 'lucide-react';
 import zellaLogo from '../assets/zella_logo.png';
@@ -273,20 +272,8 @@ export const MainLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full text-xs font-medium text-slate-600">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>System Online</span>
-            </div>
-
-            <button
-              className="p-2 text-slate-400 hover:text-navy-900 hover:bg-slate-100 rounded-xl relative transition-colors"
-              title="Notifications"
-            >
-              <Bell className="w-4 h-4" />
-            </button>
-
-            <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200">
-              <div className="text-right">
+            <div className="flex items-center gap-2 pl-2">
+              <div className="hidden sm:block text-right">
                 <div className="text-xs font-bold text-navy-900 leading-tight">{user?.full_name}</div>
                 <div className="text-[10px] font-semibold text-secondary uppercase tracking-wider">{role}</div>
               </div>
