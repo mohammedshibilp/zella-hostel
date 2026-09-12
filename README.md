@@ -231,3 +231,5 @@ To connect to a standalone PostgreSQL database:
    SELECT count(*) FROM rooms; -- Returns 23
    SELECT count(*) FROM beds;  -- Returns 49
    ```
+#   z e l l a - h o s t e l  
+ 
