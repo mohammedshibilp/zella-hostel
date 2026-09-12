@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { Lock, Mail, Eye, EyeOff, Shield, Users, ArrowRight } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import zellaLogo from '../../assets/zella_logo.png';
 import loginSideBanner from '../../assets/login_side_banner.png';
 
@@ -60,16 +60,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const fillQuickCredentials = (userType: 'admin' | 'staff') => {
-    if (userType === 'admin') {
-      setEmail('admin@zellahostel.com');
-      setPassword('Admin@12345');
-    } else {
-      setEmail('staff@zellahostel.com');
-      setPassword('Staff@12345');
-    }
-    setError(null);
-  };
 
   return (
     <main className="h-screen h-[100dvh] w-full bg-[#F8F9FB] flex flex-col lg:flex-row font-sans text-[#172B55] antialiased selection:bg-[#48258B]/15 selection:text-[#48258B] overflow-y-auto lg:overflow-hidden select-none">
@@ -225,38 +215,8 @@ export const LoginPage: React.FC = () => {
               <ArrowRight className="w-[17px] h-[17px] stroke-[2.2]" aria-hidden="true" />
             </button>
 
-            {/* Divider: "Or continue as" */}
-            <div className="relative my-3.5 sm:my-4 flex items-center justify-center">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#DCE3EE]" />
-              </div>
-              <span className="relative bg-[#FFFFFF] px-3.5 text-[13px] font-normal text-[#71809B]">
-                Or continue as
-              </span>
-            </div>
-
-            {/* Quick Role Selection */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <button
-                type="button"
-                onClick={() => fillQuickCredentials('admin')}
-                className="h-[42px] sm:h-[44px] rounded-[10px] border border-[#DCE3EE] bg-white hover:bg-slate-50/80 hover:border-[#CBD5E1] text-[#172B55] text-[14px] font-semibold flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer shadow-xs focus:outline-none focus:ring-2 focus:ring-[#48258B]/15"
-              >
-                <Shield className="w-4 h-4 text-[#48258B]" aria-hidden="true" />
-                <span>Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillQuickCredentials('staff')}
-                className="h-[42px] sm:h-[44px] rounded-[10px] border border-[#DCE3EE] bg-white hover:bg-slate-50/80 hover:border-[#CBD5E1] text-[#172B55] text-[14px] font-semibold flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer shadow-xs focus:outline-none focus:ring-2 focus:ring-[#48258B]/15"
-              >
-                <Users className="w-4 h-4 text-[#48258B]" aria-hidden="true" />
-                <span>Staff</span>
-              </button>
-            </div>
-
             {/* Footer Copyright */}
-            <p className="text-[12px] text-[#71809B] text-center mt-4 sm:mt-5 font-normal">
+            <p className="text-[12px] text-[#71809B] text-center mt-6 sm:mt-7 font-normal">
               © 2025 Zella Ladies Hostel. All rights reserved.
             </p>
           </form>
