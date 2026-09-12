@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import zellaLogo from '../../assets/zella_logo.png';
 
 export const LoginPage: React.FC = () => {
@@ -170,7 +170,7 @@ export const LoginPage: React.FC = () => {
             </div>
 
             {/* Password Field */}
-            <div className="mb-1.5">
+            <div className="mb-5 sm:mb-6">
               <label
                 htmlFor="password"
                 className="block text-[13px] sm:text-[14px] font-semibold text-[#172B55] mb-1.5 sm:mb-2"
@@ -208,27 +208,13 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Forgot Password Link */}
-            <div className="flex justify-end mt-1.5 mb-4">
-              <button
-                type="button"
-                onClick={() =>
-                  alert('For security reasons, password recovery must be initiated by contacting the Hostel Administrator.')
-                }
-                className="text-[13px] font-semibold text-[#48258B] hover:underline focus:outline-none transition-all cursor-pointer"
-              >
-                Forgot password?
-              </button>
-            </div>
-
             {/* Sign In Button */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-[50px] rounded-[10px] bg-[#48258B] hover:bg-[#3C1E75] active:bg-[#341867] text-white text-[15px] sm:text-[16px] font-semibold shadow-sm flex items-center justify-center gap-2 transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:ring-3 focus:ring-[#48258B]/20"
+              className="w-full h-[50px] rounded-[10px] bg-[#48258B] hover:bg-[#3C1E75] active:bg-[#341867] text-white text-[15px] sm:text-[16px] font-semibold shadow-sm flex items-center justify-center transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:ring-3 focus:ring-[#48258B]/20"
             >
               <span>{isSubmitting ? 'Signing in...' : 'Sign In'}</span>
-              <ArrowRight className="w-[18px] h-[18px] stroke-[2.2]" aria-hidden="true" />
             </button>
 
             {/* Footer Copyright */}
