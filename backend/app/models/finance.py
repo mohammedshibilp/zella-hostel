@@ -12,8 +12,13 @@ class FeeReceipt(Base):
     guest_id = Column(Integer, ForeignKey("guests.id", ondelete="RESTRICT"), nullable=False)
     admission_id = Column(Integer, ForeignKey("admissions.id", ondelete="SET NULL"), nullable=True)
     date = Column(Date, default=date.today, nullable=False, index=True)
+    fee_type = Column(String(100), default="Hostel Accommodation Fee", nullable=False)
     amount = Column(Float, nullable=False)
-    payment_mode = Column(String(50), default="Cash", nullable=False)  # "Cash", "Bank", "UPI"
+    discount = Column(Float, default=0.0, nullable=False)
+    paid_amount = Column(Float, nullable=False)
+    balance_amount = Column(Float, default=0.0, nullable=False)
+    payment_mode = Column(String(50), default="Cash", nullable=False)  # "Cash", "Bank", "UPI", "Card", "Other"
+    payment_reference = Column(String(100), nullable=True)
     period_start = Column(Date, nullable=True)
     period_end = Column(Date, nullable=True)
     remarks = Column(Text, nullable=True)

@@ -33,4 +33,5 @@ class AttendanceSummary(BaseModel):
     present_count: int
     absent_count: int
     leave_count: int
+    out_count: int = 0
     not_marked_count: int

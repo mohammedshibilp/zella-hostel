@@ -19,6 +19,12 @@ class BedResponse(BedBase):
 
     id: int
     room_id: int
+    current_guest_name: Optional[str] = None
+    current_guest_contact: Optional[str] = None
+    admission_date: Optional[str] = None
+    package_name: Optional[str] = None
+    monthly_fee: Optional[float] = None
+    reserved_guest_name: Optional[str] = None
 
 
 class RoomBase(BaseModel):

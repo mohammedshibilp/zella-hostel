@@ -19,6 +19,41 @@ def generate_receipt_number(db: Session) -> str:
     return f"REC-{year}-{count:04d}"
 
 
+def serialize_receipt(r: FeeReceipt, db: Session) -> FeeReceiptResponse:
+    # Resolve room number and package if active admission exists
+    adm = r.admission
+    if not adm and r.guest_id:
+        adm = db.query(Admission).filter(
+            Admission.guest_id == r.guest_id,
+            Admission.status == "Active"
+        ).first()
+
+    room_num = adm.room.room_number if (adm and adm.room) else None
+    pkg_name = adm.package.name if (adm and adm.package) else None
+
+    return FeeReceiptResponse(
+        id=r.id,
+        receipt_no=r.receipt_no,
+        guest_id=r.guest_id,
+        admission_id=r.admission_id,
+        date=r.date,
+        fee_type=r.fee_type,
+        amount=r.amount,
+        discount=r.discount,
+        paid_amount=r.paid_amount,
+        balance_amount=r.balance_amount,
+        payment_mode=r.payment_mode,
+        payment_reference=r.payment_reference,
+        period_start=r.period_start,
+        period_end=r.period_end,
+        remarks=r.remarks,
+        created_at=r.created_at,
+        guest=r.guest,
+        room_number=room_num,
+        package_name=pkg_name,
+    )
+
+
 @router.get("", response_model=List[FeeReceiptResponse])
 def get_fee_receipts(
     guest_id: Optional[int] = None,
@@ -31,7 +66,8 @@ def get_fee_receipts(
         query = query.filter(FeeReceipt.guest_id == guest_id)
     if payment_mode:
         query = query.filter(FeeReceipt.payment_mode == payment_mode)
-    return query.order_by(FeeReceipt.date.desc(), FeeReceipt.id.desc()).all()
+    records = query.order_by(FeeReceipt.date.desc(), FeeReceipt.id.desc()).all()
+    return [serialize_receipt(r, db) for r in records]
 
 
 @router.get("/{receipt_id}", response_model=FeeReceiptResponse)
@@ -43,7 +79,7 @@ def get_fee_receipt(
     receipt = db.query(FeeReceipt).filter(FeeReceipt.id == receipt_id).first()
     if not receipt:
         raise HTTPException(status_code=404, detail="Fee receipt not found")
-    return receipt
+    return serialize_receipt(receipt, db)
 
 
 @router.post("", response_model=FeeReceiptResponse, status_code=status.HTTP_201_CREATED)
@@ -62,13 +98,22 @@ def create_fee_receipt(
         num = int(receipt_no.split("-")[-1]) + 1
         receipt_no = f"REC-{date.today().year}-{num:04d}"
 
+    # Calculate paid and balance amounts
+    paid = receipt_in.paid_amount if receipt_in.paid_amount is not None else (receipt_in.amount - receipt_in.discount)
+    balance = receipt_in.balance_amount
+
     receipt = FeeReceipt(
         receipt_no=receipt_no,
         guest_id=receipt_in.guest_id,
         admission_id=receipt_in.admission_id,
         date=receipt_in.date,
+        fee_type=receipt_in.fee_type,
         amount=receipt_in.amount,
+        discount=receipt_in.discount,
+        paid_amount=paid,
+        balance_amount=balance,
         payment_mode=receipt_in.payment_mode,
+        payment_reference=receipt_in.payment_reference,
         period_start=receipt_in.period_start,
         period_end=receipt_in.period_end,
         remarks=receipt_in.remarks
@@ -77,13 +122,13 @@ def create_fee_receipt(
     db.flush()
 
     # Automatically create an Account Transaction for this receipt (Income = Cr)
-    pay_channel = "Bank" if receipt_in.payment_mode in ["Bank", "UPI"] else "Cash"
+    pay_channel = "Bank" if receipt_in.payment_mode in ["Bank", "UPI", "Card"] else "Cash"
     tx = AccountTransaction(
         date=receipt_in.date,
         transaction_type="Guest",
         guest_id=guest.id,
-        particulars=f"Hostel Fee from {guest.name} (Receipt #{receipt_no})",
-        amount=receipt_in.amount,
+        particulars=f"{receipt_in.fee_type} from {guest.name} (Receipt #{receipt_no})",
+        amount=paid,
         payment_channel=pay_channel,
         entry_type="Cr",
         reference_no=receipt_no
@@ -92,4 +137,4 @@ def create_fee_receipt(
 
     db.commit()
     db.refresh(receipt)
-    return receipt
+    return serialize_receipt(receipt, db)

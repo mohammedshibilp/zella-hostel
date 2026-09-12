@@ -8,8 +8,13 @@ class FeeReceiptCreate(BaseModel):
     guest_id: int
     admission_id: Optional[int] = None
     date: dt_date = Field(default_factory=dt_date.today)
+    fee_type: str = "Hostel Accommodation Fee"
     amount: float
-    payment_mode: str = "Cash"  # "Cash", "Bank", "UPI"
+    discount: float = 0.0
+    paid_amount: Optional[float] = None
+    balance_amount: float = 0.0
+    payment_mode: str = "Cash"  # "Cash", "Bank", "UPI", "Card", "Other"
+    payment_reference: Optional[str] = None
     period_start: Optional[dt_date] = None
     period_end: Optional[dt_date] = None
     remarks: Optional[str] = None
@@ -23,13 +28,20 @@ class FeeReceiptResponse(BaseModel):
     guest_id: int
     admission_id: Optional[int] = None
     date: dt_date
+    fee_type: str = "Hostel Accommodation Fee"
     amount: float
+    discount: float = 0.0
+    paid_amount: float
+    balance_amount: float = 0.0
     payment_mode: str
+    payment_reference: Optional[str] = None
     period_start: Optional[dt_date] = None
     period_end: Optional[dt_date] = None
     remarks: Optional[str] = None
     created_at: datetime
     guest: Optional[GuestResponse] = None
+    room_number: Optional[str] = None
+    package_name: Optional[str] = None
 
 
 class AccountTransactionCreate(BaseModel):

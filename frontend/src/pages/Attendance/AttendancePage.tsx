@@ -21,7 +21,7 @@ interface AttendanceRow {
   guest_name: string;
   room_number?: string;
   bed_number?: string;
-  status: 'Present' | 'Absent' | 'Leave';
+  status: 'Present' | 'Absent' | 'Leave' | 'Out';
   remarks: string;
 }
 
@@ -33,6 +33,7 @@ export const AttendancePage: React.FC = () => {
   const [summary, setSummary] = useState<AttendanceSummary | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const { success, error: toastError } = useToast();
 
@@ -72,7 +73,7 @@ export const AttendancePage: React.FC = () => {
     loadData();
   }, [selectedDate]);
 
-  const handleStatusChange = (guestId: number, status: 'Present' | 'Absent' | 'Leave') => {
+  const handleStatusChange = (guestId: number, status: 'Present' | 'Absent' | 'Leave' | 'Out') => {
     setRows((prev) =>
       prev.map((r) => (r.guest_id === guestId ? { ...r, status } : r))
     );
@@ -84,7 +85,7 @@ export const AttendancePage: React.FC = () => {
     );
   };
 
-  const handleMarkAll = (status: 'Present' | 'Absent' | 'Leave') => {
+  const handleMarkAll = (status: 'Present' | 'Absent' | 'Leave' | 'Out') => {
     setRows((prev) => prev.map((r) => ({ ...r, status })));
   };
 
@@ -106,11 +107,21 @@ export const AttendancePage: React.FC = () => {
     }
   };
 
+  const filteredRows = rows.filter((r) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      r.guest_name.toLowerCase().includes(q) ||
+      (r.room_number && r.room_number.toLowerCase().includes(q)) ||
+      (r.bed_number && r.bed_number.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
       <PageHeader
         title="Daily Resident Attendance"
-        subtitle="Record daily presence and leaves for all active hostel residents"
+        subtitle="Record daily presence, leaves, and out-movements for all active hostel residents"
         actions={
           <Button
             variant="primary"
@@ -124,9 +135,9 @@ export const AttendancePage: React.FC = () => {
       />
 
       {/* SUMMARY STATS & DATE BAR */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {/* Date Selector */}
-        <Card padding="sm" className="flex items-center gap-3">
+        <Card padding="sm" className="flex items-center gap-3 col-span-2 md:col-span-1">
           <Calendar className="w-5 h-5 text-primary shrink-0" />
           <div className="w-full">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
@@ -148,7 +159,7 @@ export const AttendancePage: React.FC = () => {
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Present Today
+              Present
             </span>
             <span className="text-xl font-extrabold text-emerald-700">
               {rows.filter((r) => r.status === 'Present').length}
@@ -185,39 +196,65 @@ export const AttendancePage: React.FC = () => {
             </span>
           </div>
         </Card>
+
+        {/* Out Count */}
+        <Card padding="sm" className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <DoorOpen className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Out
+            </span>
+            <span className="text-xl font-extrabold text-indigo-600">
+              {rows.filter((r) => r.status === 'Out').length}
+            </span>
+          </div>
+        </Card>
       </div>
 
-      {/* QUICK ACTIONS BAR */}
+      {/* QUICK ACTIONS & SEARCH BAR */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Quick Actions:</span>
           <button
             type="button"
             onClick={() => handleMarkAll('Present')}
-            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
           >
             Mark All Present
           </button>
           <button
             type="button"
             onClick={() => handleMarkAll('Absent')}
-            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
+            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors"
           >
             Mark All Absent
           </button>
         </div>
 
-        <span className="text-xs text-slate-400 font-medium">
-          Total active residents: {rows.length}
-        </span>
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Search resident or room..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="text-xs font-medium border border-slate-200 rounded-xl px-3 py-1.5 bg-slate-50 text-navy-900 focus:outline-none focus:bg-white focus:ring-1 focus:ring-primary w-48 sm:w-60"
+          />
+          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+            {filteredRows.length} residents
+          </span>
+        </div>
       </div>
 
       {/* ATTENDANCE TABLE */}
       {isLoading ? (
         <LoadingState message="Loading resident roster..." />
-      ) : rows.length === 0 ? (
+      ) : filteredRows.length === 0 ? (
         <Card className="text-center py-12 text-slate-400 text-xs">
-          No active residents currently admitted in the hostel.
+          {rows.length === 0
+            ? 'No active residents currently admitted in the hostel.'
+            : 'No residents matching your search query.'}
         </Card>
       ) : (
         <Card padding="none" className="overflow-hidden border border-slate-200">
@@ -232,7 +269,7 @@ export const AttendancePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {rows.map((row) => (
+                {filteredRows.map((row) => (
                   <tr key={row.guest_id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-5 py-3.5 font-bold text-navy-900">{row.guest_name}</td>
                     <td className="px-5 py-3.5">
@@ -245,7 +282,7 @@ export const AttendancePage: React.FC = () => {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1.5">
-                        {(['Present', 'Absent', 'Leave'] as const).map((st) => {
+                        {(['Present', 'Absent', 'Leave', 'Out'] as const).map((st) => {
                           const isSelected = row.status === st;
                           return (
                             <button
@@ -258,7 +295,9 @@ export const AttendancePage: React.FC = () => {
                                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                                     : st === 'Absent'
                                     ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                                    : 'bg-amber-500 text-white border-amber-500 shadow-xs'
+                                    : st === 'Leave'
+                                    ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+                                    : 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                               }`}
                             >

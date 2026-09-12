@@ -18,6 +18,7 @@ import {
   Building2,
   Calendar,
   CreditCard,
+  Tag,
 } from 'lucide-react';
 
 export const FeeReceiptsPage: React.FC = () => {
@@ -34,8 +35,13 @@ export const FeeReceiptsPage: React.FC = () => {
   const [formData, setFormData] = useState({
     guest_id: '',
     date: new Date().toISOString().split('T')[0],
+    fee_type: 'Hostel Accommodation Fee',
     amount: '6500',
+    discount: '0',
+    paid_amount: '6500',
+    balance_amount: '0',
     payment_mode: 'Cash',
+    payment_reference: '',
     period_start: new Date().toISOString().split('T')[0],
     period_end: '',
     remarks: '',
@@ -63,6 +69,32 @@ export const FeeReceiptsPage: React.FC = () => {
     loadData();
   }, []);
 
+  const handleAmountChange = (amountStr: string, discountStr: string) => {
+    const amt = parseFloat(amountStr) || 0;
+    const disc = parseFloat(discountStr) || 0;
+    const net = Math.max(0, amt - disc);
+    setFormData((prev) => ({
+      ...prev,
+      amount: amountStr,
+      discount: discountStr,
+      paid_amount: net.toString(),
+      balance_amount: '0',
+    }));
+  };
+
+  const handlePaidChange = (paidStr: string) => {
+    const amt = parseFloat(formData.amount) || 0;
+    const disc = parseFloat(formData.discount) || 0;
+    const net = Math.max(0, amt - disc);
+    const paid = parseFloat(paidStr) || 0;
+    const bal = Math.max(0, net - paid);
+    setFormData((prev) => ({
+      ...prev,
+      paid_amount: paidStr,
+      balance_amount: bal.toString(),
+    }));
+  };
+
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.guest_id || !formData.amount) {
@@ -75,8 +107,13 @@ export const FeeReceiptsPage: React.FC = () => {
       const payload = {
         guest_id: parseInt(formData.guest_id),
         date: formData.date,
+        fee_type: formData.fee_type,
         amount: parseFloat(formData.amount),
+        discount: parseFloat(formData.discount) || 0,
+        paid_amount: parseFloat(formData.paid_amount) || parseFloat(formData.amount),
+        balance_amount: parseFloat(formData.balance_amount) || 0,
         payment_mode: formData.payment_mode,
+        payment_reference: formData.payment_reference || null,
         period_start: formData.period_start || null,
         period_end: formData.period_end || null,
         remarks: formData.remarks || null,
@@ -102,7 +139,6 @@ export const FeeReceiptsPage: React.FC = () => {
     if (!receiptPrintRef.current) return;
     setIsExportingPdf(true);
     try {
-      // Dynamic import html2pdf to ensure seamless browser bundle
       const html2pdfModule = await import('html2pdf.js');
       const html2pdf = html2pdfModule.default || html2pdfModule;
 
@@ -147,22 +183,33 @@ export const FeeReceiptsPage: React.FC = () => {
       ),
     },
     {
-      header: 'Amount Paid',
-      accessor: (item) => <span className="text-sm font-extrabold text-emerald-700">₹{item.amount.toLocaleString()}</span>,
+      header: 'Fee Type',
+      accessor: (item) => (
+        <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+          {item.fee_type || 'Accommodation Fee'}
+        </span>
+      ),
+    },
+    {
+      header: 'Paid Amount',
+      accessor: (item) => (
+        <div>
+          <span className="text-sm font-extrabold text-emerald-700">
+            ₹{(item.paid_amount ?? item.amount).toLocaleString()}
+          </span>
+          {item.balance_amount && item.balance_amount > 0 ? (
+            <div className="text-[10px] text-rose-600 font-bold">
+              Bal: ₹{item.balance_amount.toLocaleString()}
+            </div>
+          ) : null}
+        </div>
+      ),
     },
     {
       header: 'Payment Mode',
       accessor: (item) => (
         <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700">
           {item.payment_mode}
-        </span>
-      ),
-    },
-    {
-      header: 'Period Covered',
-      accessor: (item) => (
-        <span className="text-xs text-slate-500 font-medium">
-          {item.period_start ? `${item.period_start} → ${item.period_end || 'End of Month'}` : '—'}
         </span>
       ),
     },
@@ -194,8 +241,13 @@ export const FeeReceiptsPage: React.FC = () => {
               setFormData({
                 guest_id: guests[0]?.id.toString() || '',
                 date: new Date().toISOString().split('T')[0],
+                fee_type: 'Hostel Accommodation Fee',
                 amount: '6500',
+                discount: '0',
+                paid_amount: '6500',
+                balance_amount: '0',
                 payment_mode: 'Cash',
+                payment_reference: '',
                 period_start: new Date().toISOString().split('T')[0],
                 period_end: '',
                 remarks: '',
@@ -249,11 +301,18 @@ export const FeeReceiptsPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Amount (₹)"
-              type="number"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+            <Select
+              label="Fee Type"
+              value={formData.fee_type}
+              onChange={(e) => setFormData({ ...formData, fee_type: e.target.value })}
+              options={[
+                { value: 'Hostel Accommodation Fee', label: 'Hostel Accommodation Fee' },
+                { value: 'Security Deposit', label: 'Security Deposit' },
+                { value: 'Mess & Food Fee', label: 'Mess & Food Fee' },
+                { value: 'Electricity & Utilities', label: 'Electricity & Utilities' },
+                { value: 'Maintenance & Service', label: 'Maintenance & Service' },
+                { value: 'Other / Miscellaneous', label: 'Other / Miscellaneous' },
+              ]}
               required
             />
             <Select
@@ -263,8 +322,49 @@ export const FeeReceiptsPage: React.FC = () => {
               options={[
                 { value: 'Cash', label: 'Cash' },
                 { value: 'UPI', label: 'UPI / Online Transfer' },
-                { value: 'Bank', label: 'Bank Transfer / Cheque' },
+                { value: 'Bank', label: 'Bank Transfer / NEFT / Cheque' },
+                { value: 'Card', label: 'Debit / Credit Card' },
+                { value: 'Other', label: 'Other Mode' },
               ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Input
+              label="Fee Amount (₹)"
+              type="number"
+              value={formData.amount}
+              onChange={(e) => handleAmountChange(e.target.value, formData.discount)}
+              required
+            />
+            <Input
+              label="Discount (₹)"
+              type="number"
+              value={formData.discount}
+              onChange={(e) => handleAmountChange(formData.amount, e.target.value)}
+            />
+            <Input
+              label="Paid Amount (₹)"
+              type="number"
+              value={formData.paid_amount}
+              onChange={(e) => handlePaidChange(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Balance Amount (₹)"
+              type="number"
+              value={formData.balance_amount}
+              onChange={(e) => setFormData({ ...formData, balance_amount: e.target.value })}
+              readOnly
+            />
+            <Input
+              label="Payment Reference / UTR"
+              placeholder="e.g. UPI Ref / Cheque No / Card Auth"
+              value={formData.payment_reference}
+              onChange={(e) => setFormData({ ...formData, payment_reference: e.target.value })}
             />
           </div>
 
@@ -329,7 +429,7 @@ export const FeeReceiptsPage: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
-                    FEE RECEIPT
+                    OFFICIAL FEE RECEIPT
                   </span>
                   <span className="text-base font-extrabold text-primary">{selectedReceipt.receipt_no}</span>
                   <span className="text-[11px] text-slate-500 block">{selectedReceipt.date}</span>
@@ -341,15 +441,21 @@ export const FeeReceiptsPage: React.FC = () => {
                 <div>
                   <span className="text-slate-400 block mb-0.5">Received From:</span>
                   <span className="text-sm font-bold text-navy-900 block">{selectedReceipt.guest?.name}</span>
-                  <span className="text-slate-600">{selectedReceipt.guest?.contact_no}</span>
+                  <span className="text-slate-600 block">{selectedReceipt.guest?.contact_no}</span>
+                  {selectedReceipt.package_name && (
+                    <span className="text-[11px] text-primary font-medium">Package: {selectedReceipt.package_name}</span>
+                  )}
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">Room & Bed:</span>
                   <span className="text-sm font-bold text-navy-900 block">
-                    Room {selectedReceipt.guest?.room_number || '101'} • Bed{' '}
+                    Room {selectedReceipt.room_number || selectedReceipt.guest?.room_number || '101'} • Bed{' '}
                     {selectedReceipt.guest?.bed_number || '101-A'}
                   </span>
-                  <span className="text-slate-600">Payment Mode: {selectedReceipt.payment_mode}</span>
+                  <span className="text-slate-600 block">
+                    Payment Mode: {selectedReceipt.payment_mode}
+                    {selectedReceipt.payment_reference && ` (Ref: ${selectedReceipt.payment_reference})`}
+                  </span>
                 </div>
               </div>
 
@@ -358,13 +464,15 @@ export const FeeReceiptsPage: React.FC = () => {
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase">
                     <th className="py-2">Description</th>
-                    <th className="py-2 text-right">Amount</th>
+                    <th className="py-2 text-right">Amount (₹)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   <tr>
                     <td className="py-3">
-                      <div className="font-bold text-navy-900">Hostel Accommodation & Boarding</div>
+                      <div className="font-bold text-navy-900">
+                        {selectedReceipt.fee_type || 'Hostel Accommodation & Boarding'}
+                      </div>
                       <div className="text-slate-500 text-[11px]">
                         Period: {selectedReceipt.period_start || selectedReceipt.date} to{' '}
                         {selectedReceipt.period_end || 'Month-end'}
@@ -377,14 +485,30 @@ export const FeeReceiptsPage: React.FC = () => {
                       ₹{selectedReceipt.amount.toLocaleString()}
                     </td>
                   </tr>
+                  {selectedReceipt.discount ? (
+                    <tr>
+                      <td className="py-2 text-slate-500 font-medium">Concession / Discount</td>
+                      <td className="py-2 text-right font-semibold text-rose-600">
+                        - ₹{selectedReceipt.discount.toLocaleString()}
+                      </td>
+                    </tr>
+                  ) : null}
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-slate-300 font-black text-sm">
-                    <td className="py-3 text-navy-900">Total Paid</td>
+                    <td className="py-3 text-navy-900">Net Amount Paid</td>
                     <td className="py-3 text-right text-emerald-700">
-                      ₹{selectedReceipt.amount.toLocaleString()}
+                      ₹{(selectedReceipt.paid_amount ?? selectedReceipt.amount).toLocaleString()}
                     </td>
                   </tr>
+                  {selectedReceipt.balance_amount && selectedReceipt.balance_amount > 0 ? (
+                    <tr className="border-t border-slate-200 text-xs font-bold text-rose-600">
+                      <td className="py-2">Balance Due</td>
+                      <td className="py-2 text-right">
+                        ₹{selectedReceipt.balance_amount.toLocaleString()}
+                      </td>
+                    </tr>
+                  ) : null}
                 </tfoot>
               </table>
 

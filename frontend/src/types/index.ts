@@ -24,6 +24,12 @@ export interface Bed {
   is_occupied: boolean;
   status: 'Available' | 'Occupied' | 'Reserved' | 'Maintenance';
   notes?: string;
+  current_guest_name?: string;
+  current_guest_contact?: string;
+  admission_date?: string;
+  package_name?: string;
+  monthly_fee?: number;
+  reserved_guest_name?: string;
 }
 
 export interface Room {
@@ -126,7 +132,7 @@ export interface Attendance {
   id: number;
   guest_id: number;
   date: string;
-  status: 'Present' | 'Absent' | 'Leave';
+  status: 'Present' | 'Absent' | 'Leave' | 'Out';
   remarks?: string;
   created_at: string;
   guest?: Guest;
@@ -138,6 +144,7 @@ export interface AttendanceSummary {
   present_count: number;
   absent_count: number;
   leave_count: number;
+  out_count: number;
   not_marked_count: number;
 }
 
@@ -147,13 +154,22 @@ export interface FeeReceipt {
   guest_id: number;
   admission_id?: number;
   date: string;
-  amount: number;
-  payment_mode: 'Cash' | 'Bank' | 'UPI';
+  fee_type?: string;
+  billing_period?: string;
   period_start?: string;
   period_end?: string;
+  amount: number;
+  discount?: number;
+  previous_balance?: number;
+  paid_amount?: number;
+  balance_amount?: number;
+  payment_mode: 'Cash' | 'Bank' | 'UPI' | 'Card' | 'Other';
+  payment_reference?: string;
   remarks?: string;
   created_at: string;
   guest?: Guest;
+  room_number?: string;
+  package_name?: string;
 }
 
 export interface AccountTransaction {

@@ -50,12 +50,7 @@ def get_dashboard_metrics(
     # Financials for Current Month
     first_day_of_month = today.replace(day=1)
     
-    # Monthly fee receipts (Income)
-    fee_income = db.query(func.sum(FeeReceipt.amount)).filter(
-        FeeReceipt.date >= first_day_of_month
-    ).scalar() or 0.0
-
-    # Account Transactions: Credit is income, Debit is expense
+    # Account Transactions: Credit is income, Debit is expense (unified source of truth)
     account_credits = db.query(func.sum(AccountTransaction.amount)).filter(
         AccountTransaction.date >= first_day_of_month,
         AccountTransaction.entry_type == "Cr"
@@ -66,7 +61,7 @@ def get_dashboard_metrics(
         AccountTransaction.entry_type == "Dr"
     ).scalar() or 0.0
 
-    total_income = fee_income + account_credits
+    total_income = account_credits
     total_expense = account_debits
     net_profit = total_income - total_expense
 

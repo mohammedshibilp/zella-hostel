@@ -58,6 +58,8 @@ def create_booking(
 
     booking = Booking(**booking_in.model_dump())
     db.add(booking)
+    # Mark bed as Reserved
+    bed.status = "Reserved"
     db.flush()
 
     # Record advance amount in accounts if > 0
@@ -91,6 +93,11 @@ def cancel_booking(
         raise HTTPException(status_code=400, detail="Only confirmed bookings can be cancelled")
     
     booking.status = "Cancelled"
+    # Release reserved bed if not occupied
+    bed = db.query(Bed).filter(Bed.id == booking.bed_id).first()
+    if bed and bed.status == "Reserved":
+        bed.status = "Available"
+
     db.commit()
     db.refresh(booking)
     return booking

@@ -44,6 +44,7 @@ def get_attendance_summary(
     present = sum(1 for r in records if r.status == "Present")
     absent = sum(1 for r in records if r.status == "Absent")
     leave = sum(1 for r in records if r.status == "Leave")
+    out = sum(1 for r in records if r.status == "Out")
     not_marked = max(0, total_active_guests - len(records))
 
     return AttendanceSummary(
@@ -52,6 +53,7 @@ def get_attendance_summary(
         present_count=present,
         absent_count=absent,
         leave_count=leave,
+        out_count=out,
         not_marked_count=not_marked
     )
 

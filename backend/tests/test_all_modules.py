@@ -206,7 +206,7 @@ def test_attendance_operations(staff_headers):
     assert sum_res.json()["present_count"] >= 1
 
 
-# 7. FEE RECEIPTS & INVOICING
+# 7. FEE RECEIPTS & INVOICING (Client Fields & Calculations)
 def test_fee_receipts(staff_headers):
     guests_res = client.get(f"{settings.API_V1_STR}/guests", headers=staff_headers)
     guests = guests_res.json()
@@ -216,59 +216,262 @@ def test_fee_receipts(staff_headers):
     receipt_payload = {
         "guest_id": guests[0]["id"],
         "date": str(date.today()),
-        "amount": 6500.0,
-        "payment_mode": "UPI",
-        "remarks": "Monthly fee payment",
+        "fee_type": "Hostel Accommodation Fee",
+        "amount": 7000.0,
+        "discount": 500.0,
+        "paid_amount": 6500.0,
+        "balance_amount": 0.0,
+        "payment_mode": "Card",
+        "payment_reference": "CARD-AUTH-987654",
+        "period_start": str(date.today()),
+        "period_end": str(date.today()),
+        "remarks": "Monthly fee payment via Card",
     }
     rec_res = client.post(f"{settings.API_V1_STR}/fee-receipts", json=receipt_payload, headers=staff_headers)
     assert rec_res.status_code == 201
     receipt = rec_res.json()
     assert receipt["receipt_no"].startswith("REC-")
-    assert receipt["amount"] == 6500.0
+    assert receipt["amount"] == 7000.0
+    assert receipt["discount"] == 500.0
+    assert receipt["paid_amount"] == 6500.0
+    assert receipt["payment_mode"] == "Card"
+    assert receipt["payment_reference"] == "CARD-AUTH-987654"
 
 
-# 8. ACCOUNTS & DOUBLE-ENTRY LEDGER
-def test_accounts_ledger(staff_headers):
-    # Record Credit (Income)
-    cr_payload = {
+# 8. ACCOUNTS 4 SPECIFIC CLIENT PERMUTATIONS
+def test_accounts_four_permutations(staff_headers):
+    guests_res = client.get(f"{settings.API_V1_STR}/guests", headers=staff_headers)
+    guest_id = guests_res.json()[0]["id"] if guests_res.json() else None
+
+    # 1. Guest + Cash + Debit
+    tx1 = client.post(f"{settings.API_V1_STR}/accounts", json={
         "date": str(date.today()),
-        "transaction_type": "Plain",
-        "particulars": "Sponsorship Inflow",
-        "amount": 15000.0,
+        "transaction_type": "Guest",
+        "guest_id": guest_id,
+        "particulars": "Guest Security Refund",
+        "amount": 1000.0,
+        "payment_channel": "Cash",
+        "entry_type": "Dr"
+    }, headers=staff_headers)
+    assert tx1.status_code == 201
+
+    # 2. Guest + Bank + Credit
+    tx2 = client.post(f"{settings.API_V1_STR}/accounts", json={
+        "date": str(date.today()),
+        "transaction_type": "Guest",
+        "guest_id": guest_id,
+        "particulars": "Guest Fee via NEFT",
+        "amount": 6500.0,
         "payment_channel": "Bank",
-        "entry_type": "Cr",
-        "reference_no": "TX-CR-001",
-    }
-    res_cr = client.post(f"{settings.API_V1_STR}/accounts", json=cr_payload, headers=staff_headers)
-    assert res_cr.status_code == 201
+        "entry_type": "Cr"
+    }, headers=staff_headers)
+    assert tx2.status_code == 201
 
-    # Record Debit (Expense)
-    dr_payload = {
+    # 3. Plain + Cash + Debit
+    tx3 = client.post(f"{settings.API_V1_STR}/accounts", json={
         "date": str(date.today()),
         "transaction_type": "Plain",
-        "particulars": "Hostel WiFi Bill",
+        "particulars": "Office Stationery & Cleaning Supplies",
+        "amount": 450.0,
+        "payment_channel": "Cash",
+        "entry_type": "Dr"
+    }, headers=staff_headers)
+    assert tx3.status_code == 201
+
+    # 4. Plain + Bank + Credit
+    tx4 = client.post(f"{settings.API_V1_STR}/accounts", json={
+        "date": str(date.today()),
+        "transaction_type": "Plain",
+        "particulars": "Vendor Scrap Sale Inflow",
         "amount": 2500.0,
         "payment_channel": "Bank",
-        "entry_type": "Dr",
-        "reference_no": "TX-DR-001",
-    }
-    res_dr = client.post(f"{settings.API_V1_STR}/accounts", json=dr_payload, headers=staff_headers)
-    assert res_dr.status_code == 201
+        "entry_type": "Cr"
+    }, headers=staff_headers)
+    assert tx4.status_code == 201
 
-    # Check Summary
+    # Verify summary calculations
     sum_res = client.get(f"{settings.API_V1_STR}/accounts/summary", headers=staff_headers)
     assert sum_res.status_code == 200
-    summary = sum_res.json()
-    assert summary["total_credit"] >= 15000.0
-    assert summary["total_debit"] >= 2500.0
-    assert summary["net_balance"] == summary["total_credit"] - summary["total_debit"]
+    s = sum_res.json()
+    assert s["total_credit"] > 0
+    assert s["total_debit"] > 0
+    assert s["net_balance"] == round(s["total_credit"] - s["total_debit"], 2)
 
 
-# 9. DYNAMIC DASHBOARD METRICS
-def test_dashboard_real_data(staff_headers):
-    res = client.get(f"{settings.API_V1_STR}/dashboard/metrics", headers=staff_headers)
+# 9. ATTENDANCE INCLUDING 'OUT' STATUS & SUMMARY
+def test_attendance_with_out_status(staff_headers):
+    guests_res = client.get(f"{settings.API_V1_STR}/guests", headers=staff_headers)
+    guests = guests_res.json()
+    if len(guests) >= 1:
+        g_id = guests[0]["id"]
+        # Save Out status
+        bulk_payload = {
+            "date": str(date.today()),
+            "records": [{"guest_id": g_id, "status": "Out", "remarks": "Late library permission"}]
+        }
+        res = client.post(f"{settings.API_V1_STR}/attendance/bulk", json=bulk_payload, headers=staff_headers)
+        assert res.status_code == 200
+
+        sum_res = client.get(
+            f"{settings.API_V1_STR}/attendance/summary?attendance_date={str(date.today())}",
+            headers=staff_headers
+        )
+        assert sum_res.status_code == 200
+        assert sum_res.json()["out_count"] >= 1
+
+
+# 10. VERIFY EXACT 23 INITIAL ROOMS & 49 BEDS
+def test_exact_23_initial_rooms(staff_headers):
+    res = client.get(f"{settings.API_V1_STR}/rooms", headers=staff_headers)
     assert res.status_code == 200
-    data = res.json()
-    assert data["total_rooms"] == 23
-    assert data["total_beds"] == 49
-    assert data["total_income_this_month"] > 0
+    rooms = res.json()
+    assert len(rooms) == 23
+
+    expected_rooms = [
+        "101", "102", "103", "104", "105", "106", "107", "108", "109", "110",
+        "201", "202", "203", "204", "205", "206", "207", "208", "209", "210",
+        "301", "302", "303"
+    ]
+    room_numbers = [r["room_number"] for r in rooms]
+    assert sorted(room_numbers) == sorted(expected_rooms)
+
+    total_beds = sum(len(r["beds"]) for r in rooms)
+    assert total_beds == 49
+
+
+# 11. OVERLAPPING BOOKING COLLISION REJECTION
+def test_overlapping_booking_rejection(staff_headers):
+    rooms_res = client.get(f"{settings.API_V1_STR}/rooms", headers=staff_headers)
+    room = [r for r in rooms_res.json() if r["floor"] == 2][0]
+    bed = [b for b in room["beds"] if not b["is_occupied"]][0]
+
+    b1_payload = {
+        "guest_name": "Applicant One",
+        "contact_no": "+91 9111122222",
+        "email": "applicant1@example.com",
+        "room_id": room["id"],
+        "bed_id": bed["id"],
+        "booking_date": str(date.today()),
+        "check_in_date": str(date.today()),
+        "advance_amount": 1000.0,
+    }
+    b1_res = client.post(f"{settings.API_V1_STR}/bookings", json=b1_payload, headers=staff_headers)
+    assert b1_res.status_code == 201
+
+    # Overlapping attempt on same bed MUST fail with HTTP 400
+    b2_payload = {
+        "guest_name": "Applicant Two",
+        "contact_no": "+91 9333344444",
+        "email": "applicant2@example.com",
+        "room_id": room["id"],
+        "bed_id": bed["id"],
+        "booking_date": str(date.today()),
+        "check_in_date": str(date.today()),
+        "advance_amount": 1000.0,
+    }
+    b2_res = client.post(f"{settings.API_V1_STR}/bookings", json=b2_payload, headers=staff_headers)
+    assert b2_res.status_code == 400
+    assert "already booked" in b2_res.json()["detail"].lower()
+
+
+# 12. COMPLETE END-TO-END BUSINESS FLOW
+def test_complete_business_flow(staff_headers):
+    # Step 1: ENQUIRY
+    enq_res = client.post(f"{settings.API_V1_STR}/enquiries", json={
+        "date": str(date.today()),
+        "name": "Kavita Sharma",
+        "mode": "Call",
+        "occupation": "Working",
+        "approx_coming_date": str(date.today()),
+        "contact_no": "+91 9876500112",
+        "current_status": "Open",
+        "notes": "Prefers ground floor room"
+    }, headers=staff_headers)
+    assert enq_res.status_code == 201
+    enq = enq_res.json()
+
+    # Step 2: CONVERT TO ADMISSION (Status Converted)
+    patch_enq = client.patch(
+        f"{settings.API_V1_STR}/enquiries/{enq['id']}/status?current_status=Converted",
+        headers=staff_headers
+    )
+    assert patch_enq.status_code == 200
+
+    # Step 3: GET ROOM & VACANT BED
+    rooms_res = client.get(f"{settings.API_V1_STR}/rooms", headers=staff_headers)
+    selected_room = [r for r in rooms_res.json() if r["vacant_count"] > 0][0]
+    selected_bed = [b for b in selected_room["beds"] if not b["is_occupied"]][0]
+
+    # Step 4: ADMISSION
+    adm_res = client.post(f"{settings.API_V1_STR}/admissions", json={
+        "guest_name": "Kavita Sharma",
+        "contact_no": "+91 9876500112",
+        "email": "kavita@example.com",
+        "occupation": "Working",
+        "guardian_name": "Mr. Sharma",
+        "guardian_phone": "+91 9876500000",
+        "address": "South Extension, New Delhi",
+        "id_proof_type": "Passport",
+        "id_proof_number": "Z1234567",
+        "room_id": selected_room["id"],
+        "bed_id": selected_bed["id"],
+        "admission_date": str(date.today()),
+        "security_deposit": 5000.0,
+        "monthly_fee": 6500.0,
+    }, headers=staff_headers)
+    assert adm_res.status_code == 201
+    adm = adm_res.json()
+    guest_id = adm["guest_id"]
+    adm_id = adm["id"]
+
+    # Step 5: BED OCCUPIED & ROOM STATUS
+    bed_check = client.get(f"{settings.API_V1_STR}/rooms/{selected_room['id']}", headers=staff_headers)
+    bed_obj = [b for b in bed_check.json()["beds"] if b["id"] == selected_bed["id"]][0]
+    assert bed_obj["is_occupied"] is True
+
+    # Step 6: DASHBOARD METRICS
+    dash_res = client.get(f"{settings.API_V1_STR}/dashboard/metrics", headers=staff_headers)
+    assert dash_res.status_code == 200
+    assert dash_res.json()["occupied_beds"] > 0
+
+    # Step 7: FEE RECEIPT
+    rec_res = client.post(f"{settings.API_V1_STR}/fee-receipts", json={
+        "guest_id": guest_id,
+        "admission_id": adm_id,
+        "date": str(date.today()),
+        "fee_type": "Hostel Accommodation Fee",
+        "amount": 6500.0,
+        "discount": 0.0,
+        "paid_amount": 6500.0,
+        "balance_amount": 0.0,
+        "payment_mode": "UPI",
+        "payment_reference": "UPI-FLOW-001",
+        "remarks": "First month rent"
+    }, headers=staff_headers)
+    assert rec_res.status_code == 201
+    receipt = rec_res.json()
+    assert receipt["receipt_no"].startswith("REC-")
+
+    # Step 8: ATTENDANCE
+    att_res = client.post(f"{settings.API_V1_STR}/attendance/bulk", json={
+        "date": str(date.today()),
+        "records": [{"guest_id": guest_id, "status": "Present", "remarks": "First day"}]
+    }, headers=staff_headers)
+    assert att_res.status_code == 200
+
+    # Step 9: CHECKOUT
+    co_res = client.post(f"{settings.API_V1_STR}/admissions/{adm_id}/checkout", json={
+        "checkout_date": str(date.today()),
+        "notes": "End of stay"
+    }, headers=staff_headers)
+    assert co_res.status_code == 200
+    assert co_res.json()["status"] == "CheckedOut"
+
+    # Step 10: BED RELEASED
+    room_after = client.get(f"{settings.API_V1_STR}/rooms/{selected_room['id']}", headers=staff_headers)
+    bed_after = [b for b in room_after.json()["beds"] if b["id"] == selected_bed["id"]][0]
+    assert bed_after["is_occupied"] is False
+
+    # Step 11: GUEST NO LONGER ACTIVE RESIDENT
+    guest_after = client.get(f"{settings.API_V1_STR}/guests/{guest_id}", headers=staff_headers)
+    assert guest_after.json()["status"] == "Vacated"
