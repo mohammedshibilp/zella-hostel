@@ -21,14 +21,24 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (!email || !password) {
-      setError('Please enter both email and password');
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (!cleanEmail || !cleanPassword) {
+      setError('Please enter both email and password.');
+      return;
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setError('Please enter a valid email address.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await login(email.trim().toLowerCase(), password.trim());
+      await login(cleanEmail, cleanPassword);
       success('Welcome back! You have successfully signed in.', 'Authentication Successful');
       navigate('/dashboard');
     } catch (err: any) {
@@ -41,7 +51,7 @@ export const LoginPage: React.FC = () => {
           msg = err.response.data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
         }
       } else if (err.message && err.message !== 'Request failed with status code 401') {
-        msg = `Connection issue: ${err.message}. Please verify the server is running.`;
+        msg = `Connection issue: ${err.message}. Please verify the backend is running.`;
       }
       setError(msg);
       toastError(msg, 'Login Failed');
@@ -62,158 +72,196 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] flex flex-col lg:flex-row bg-[#F8F9FB] font-sans antialiased selection:bg-[#3F2576]/15 selection:text-[#3F2576]">
-      {/* LEFT COLUMN: Hero / Brand Showcase (exact model on desktop) */}
-      <div className="hidden lg:flex lg:w-1/2 min-h-screen relative bg-[#F8F9FB] border-r border-slate-200/70 items-center justify-center p-8 xl:p-14 overflow-hidden select-none">
-        <div className="w-full max-w-[500px] flex flex-col items-center">
+    <main className="min-h-screen min-h-[100dvh] w-full bg-[#F8F9FB] flex flex-col lg:flex-row font-sans text-[#172B55] antialiased selection:bg-[#48258B]/15 selection:text-[#48258B]">
+      {/* ==================================================
+          LEFT BRANDING SECTION (Desktop / Tablet)
+          Large rounded rectangular visual panel
+          Approx. 575px width, 830px height, 16px radius
+         ================================================== */}
+      <section
+        aria-label="Branding Showcase"
+        className="hidden lg:flex lg:w-1/2 min-h-screen items-center justify-center p-6 xl:p-10 border-r border-[#DCE3EE]/50 select-none"
+      >
+        <div className="w-full max-w-[575px] h-[830px] max-h-[92vh] rounded-[16px] overflow-hidden bg-[#F4F0ED] border border-[#DCE3EE]/60 shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex flex-col justify-between relative">
           <img
             src={loginSideBanner}
             alt="Zella Ladies Hostel - Safe Spaces. Stronger Futures."
-            className="w-full h-auto object-contain rounded-2xl shadow-sm"
+            className="w-full h-full object-cover object-top"
           />
         </div>
-      </div>
+      </section>
 
-      {/* RIGHT COLUMN: Interactive Login Card */}
-      <div className="w-full lg:w-1/2 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-12">
-        {/* Mobile Header (visible only on small screens < lg) */}
+      {/* ==================================================
+          RIGHT LOGIN SECTION
+          Centered white login card
+          Approx. 525px width, 660px height, 26px radius
+         ================================================== */}
+      <section
+        aria-label="Login Form"
+        className="w-full lg:w-1/2 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10"
+      >
+        {/* Mobile Header: Logo centered above login card (hidden on lg screens) */}
         <div className="lg:hidden flex flex-col items-center text-center mb-6">
           <img
             src={zellaLogo}
             alt="Zella Ladies Hostel"
-            className="h-12 w-auto object-contain mb-2"
+            className="h-12 w-auto max-w-[200px] object-contain mb-2"
           />
-          <span className="text-[11px] uppercase font-bold text-slate-400 tracking-widest">
+          <span className="text-[11px] uppercase font-bold text-[#71809B] tracking-[3px]">
             Enterprise Management System
           </span>
         </div>
 
-        {/* Floating Rounded Login Card */}
-        <div className="w-full max-w-[450px] bg-white rounded-[28px] border border-slate-100 shadow-[0_12px_40px_-10px_rgba(0,0,0,0.07)] p-7 sm:p-10">
-          {/* Card Title & Subtitle */}
-          <div className="mb-6">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E1B4B] tracking-tight">
+        {/* White Login Card: Approx. 525px wide, 26px border radius, 48px padding */}
+        <div className="w-full max-w-[525px] bg-[#FFFFFF] rounded-[26px] border border-[#DCE3EE]/50 shadow-[0_8px_30px_rgba(0,0,0,0.04)] p-8 sm:p-12 transition-all">
+          {/* Header */}
+          <div className="mb-7">
+            <h1 className="text-[32px] sm:text-[36px] font-bold text-[#172B55] tracking-tight leading-tight">
               Welcome Back
             </h1>
-            <p className="text-sm text-slate-500 mt-1.5 font-normal">
+            <p className="text-[16px] sm:text-[17px] text-[#71809B] mt-2 font-normal leading-normal">
               Sign in to your Zella Ladies Hostel account
             </p>
           </div>
 
+          {/* Inline Error Message */}
           {error && (
-            <div className="p-3.5 mb-5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium animate-shake">
-              {error}
+            <div
+              role="alert"
+              className="p-3.5 mb-6 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-[13px] font-medium animate-shake flex items-center gap-2"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* Form */}
+          <form onSubmit={handleSubmit} noValidate className="flex flex-col">
             {/* Email Address Field */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-2">
+            <div className="mb-5">
+              <label
+                htmlFor="email"
+                className="block text-[14px] font-semibold text-[#172B55] mb-[10px]"
+              >
                 Email Address
               </label>
               <div className="relative flex items-center">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+                <Mail
+                  className="w-[18px] h-[18px] text-[#71809B] absolute left-4 pointer-events-none"
+                  aria-hidden="true"
+                />
                 <input
+                  id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email address"
-                  className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3F2576]/15 focus:border-[#3F2576] transition-all"
-                  autoComplete="username"
+                  className="w-full h-[55px] pl-12 pr-4 bg-white border border-[#DCE3EE] rounded-[12px] text-[15px] text-[#172B55] placeholder:text-[#71809B]/70 focus:outline-none focus:border-[#48258B] focus:ring-2 focus:ring-[#48258B]/15 transition-all"
+                  autoComplete="email"
                   required
                 />
               </div>
             </div>
 
             {/* Password Field */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-2">
+            <div className="mb-2.5">
+              <label
+                htmlFor="password"
+                className="block text-[14px] font-semibold text-[#172B55] mb-[10px]"
+              >
                 Password
               </label>
               <div className="relative flex items-center">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+                <Lock
+                  className="w-[18px] h-[18px] text-[#71809B] absolute left-4 pointer-events-none"
+                  aria-hidden="true"
+                />
                 <input
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full pl-10 pr-10 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3F2576]/15 focus:border-[#3F2576] transition-all"
+                  className="w-full h-[55px] pl-12 pr-12 bg-white border border-[#DCE3EE] rounded-[12px] text-[15px] text-[#172B55] placeholder:text-[#71809B]/70 focus:outline-none focus:border-[#48258B] focus:ring-2 focus:ring-[#48258B]/15 transition-all"
                   autoComplete="current-password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 text-slate-400 hover:text-slate-600 focus:outline-none"
-                  tabIndex={-1}
-                  title={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-4 text-[#71809B] hover:text-[#172B55] focus:outline-none p-1 rounded-md transition-colors"
+                  tabIndex={0}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? (
+                    <EyeOff className="w-[18px] h-[18px]" aria-hidden="true" />
+                  ) : (
+                    <Eye className="w-[18px] h-[18px]" aria-hidden="true" />
+                  )}
                 </button>
               </div>
             </div>
 
             {/* Forgot Password Link */}
-            <div className="flex justify-end -mt-1">
+            <div className="flex justify-end mb-6">
               <button
                 type="button"
                 onClick={() =>
-                  alert('Default credentials:\nAdmin: admin@zellahostel.com / Admin@12345\nStaff: staff@zellahostel.com / Staff@12345')
+                  alert('For security reasons, password recovery must be initiated by contacting the Hostel Administrator.')
                 }
-                className="text-xs font-semibold text-[#3F2576] hover:text-[#2d1857] transition-colors"
+                className="text-[14px] font-semibold text-[#48258B] hover:underline focus:outline-none transition-all cursor-pointer"
               >
                 Forgot password?
               </button>
             </div>
 
-            {/* Submit Button */}
+            {/* Sign In Button: Height ~56px, Radius ~12px, #48258B background */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full mt-2 py-3.5 px-4 rounded-xl bg-[#3F2576] hover:bg-[#341d63] active:bg-[#2b1752] text-white font-semibold text-sm shadow-md shadow-[#3F2576]/20 flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full h-[56px] rounded-[12px] bg-[#48258B] hover:bg-[#3D1E79] active:bg-[#341867] text-white text-[17px] font-semibold shadow-sm flex items-center justify-center gap-2.5 transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#48258B]/20"
             >
               <span>{isSubmitting ? 'Signing in...' : 'Sign In'}</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-[18px] h-[18px] stroke-[2.2]" aria-hidden="true" />
             </button>
-          </form>
 
-          {/* Divider: Or continue as */}
-          <div className="relative my-6 flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200/80" />
+            {/* Divider: "Or continue as" */}
+            <div className="relative my-7 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[#DCE3EE]" />
+              </div>
+              <span className="relative bg-[#FFFFFF] px-3.5 text-[14px] font-normal text-[#71809B]">
+                Or continue as
+              </span>
             </div>
-            <span className="relative bg-white px-3 text-xs font-medium text-slate-400">
-              Or continue as
-            </span>
-          </div>
 
-          {/* Quick Role Switch Buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => fillQuickCredentials('admin')}
-              className="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 transition-all shadow-xs cursor-pointer active:scale-[0.98]"
-            >
-              <Shield className="w-4 h-4 text-[#3F2576]" />
-              <span>Admin</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => fillQuickCredentials('staff')}
-              className="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 transition-all shadow-xs cursor-pointer active:scale-[0.98]"
-            >
-              <Users className="w-4 h-4 text-[#3F2576]" />
-              <span>Staff</span>
-            </button>
-          </div>
+            {/* Quick Role Selection: Two equal-width outlined buttons */}
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => fillQuickCredentials('admin')}
+                className="h-[50px] rounded-[11px] border border-[#DCE3EE] bg-white hover:bg-slate-50/80 hover:border-[#CBD5E1] text-[#172B55] text-[15px] font-semibold flex items-center justify-center gap-2.5 transition-all duration-150 cursor-pointer shadow-xs focus:outline-none focus:ring-2 focus:ring-[#48258B]/15"
+              >
+                <Shield className="w-4 h-4 text-[#48258B]" aria-hidden="true" />
+                <span>Admin</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fillQuickCredentials('staff')}
+                className="h-[50px] rounded-[11px] border border-[#DCE3EE] bg-white hover:bg-slate-50/80 hover:border-[#CBD5E1] text-[#172B55] text-[15px] font-semibold flex items-center justify-center gap-2.5 transition-all duration-150 cursor-pointer shadow-xs focus:outline-none focus:ring-2 focus:ring-[#48258B]/15"
+              >
+                <Users className="w-4 h-4 text-[#48258B]" aria-hidden="true" />
+                <span>Staff</span>
+              </button>
+            </div>
 
-          {/* Footer Copyright */}
-          <p className="text-xs text-slate-400 text-center mt-6">
-            © 2025 Zella Ladies Hostel. All rights reserved.
-          </p>
+            {/* Footer Copyright */}
+            <p className="text-[13px] text-[#71809B] text-center mt-8 font-normal">
+              © 2025 Zella Ladies Hostel. All rights reserved.
+            </p>
+          </form>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };

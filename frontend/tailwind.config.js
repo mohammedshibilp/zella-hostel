@@ -46,7 +46,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["Montserrat", "sans-serif"],
+        sans: ["Inter", "Montserrat", "sans-serif"],
+        inter: ["Inter", "sans-serif"],
         montserrat: ["Montserrat", "sans-serif"],
       },
       borderRadius: {
