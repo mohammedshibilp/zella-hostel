@@ -124,10 +124,10 @@ export const MainLayout: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen min-h-[100dvh] flex bg-[#F8F9FB] text-navy-900 font-sans antialiased overflow-x-hidden">
-      {/* DESKTOP SIDEBAR */}
+    <div className="min-h-screen min-h-[100dvh] bg-[#F8F9FB] text-navy-900 font-sans antialiased">
+      {/* DESKTOP SIDEBAR - FIXED & PERMANENTLY STATIONARY */}
       <aside
-        className={`hidden lg:flex flex-col border-r border-slate-200/80 bg-white shadow-soft transition-all duration-300 sticky top-0 h-screen z-30 ${
+        className={`hidden lg:flex flex-col border-r border-slate-200/80 bg-white shadow-soft transition-[width] duration-300 fixed top-0 left-0 bottom-0 h-screen z-30 select-none ${
           isCollapsed ? 'w-20' : 'w-64'
         }`}
       >
@@ -153,7 +153,7 @@ export const MainLayout: React.FC = () => {
           </button>
         </div>
 
-        {/* Scrollable Nav Items */}
+        {/* Scrollable Nav Items (internal to sidebar only) */}
         <div className="flex-1 overflow-y-auto px-3 py-2 scrollbar-none">{renderNavItems(false)}</div>
 
         {/* Sidebar Footer / User Status */}
@@ -227,8 +227,12 @@ export const MainLayout: React.FC = () => {
         </div>
       </div>
 
-      {/* MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* MAIN CONTENT AREA - Appropriately padded for fixed stationary sidebar */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 min-h-screen transition-[padding] duration-300 ${
+          isCollapsed ? 'lg:pl-20' : 'lg:pl-64'
+        }`}
+      >
         {/* Top Navbar */}
         <header className="h-16 bg-white border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs">
           <div className="flex items-center gap-3">
