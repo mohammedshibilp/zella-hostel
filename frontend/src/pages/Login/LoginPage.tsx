@@ -118,14 +118,14 @@ export const LoginPage: React.FC = () => {
           </span>
         </div>
 
-        {/* Login Card: Exact 520px max-width, 48px padding, 20px radius, #E8ECF2 border */}
-        <div className="w-full max-w-[520px] bg-[#FFFFFF] rounded-[20px] border border-[#E8ECF2] shadow-[0_20px_50px_rgba(20,35,70,0.07)] p-8 sm:p-12 transition-all">
+        {/* Login Card: Reduced compact size (460px max-width, 36px padding), 20px radius */}
+        <div className="w-full max-w-[460px] bg-[#FFFFFF] rounded-[20px] border border-[#E8ECF2] shadow-[0_16px_40px_rgba(20,35,70,0.06)] p-6 sm:p-9 transition-all">
           {/* Header */}
-          <div className="mb-8 sm:mb-9">
-            <h1 className="text-[30px] sm:text-[32px] font-bold text-[#172B55] tracking-tight leading-tight">
+          <div className="mb-6 sm:mb-7">
+            <h1 className="text-[28px] sm:text-[30px] font-bold text-[#172B55] tracking-tight leading-tight">
               Welcome Back
             </h1>
-            <p className="text-[15px] sm:text-[16px] text-[#71809B] mt-2 font-normal leading-normal">
+            <p className="text-[14px] sm:text-[15px] text-[#71809B] mt-1.5 font-normal leading-normal">
               Sign in to your Zella Ladies Hostel account
             </p>
           </div>
@@ -134,7 +134,7 @@ export const LoginPage: React.FC = () => {
           {error && (
             <div
               role="alert"
-              className="p-3.5 mb-5 rounded-[10px] bg-rose-50 border border-rose-200/80 text-rose-700 text-[13px] font-medium flex items-center gap-2"
+              className="p-3 mb-4 rounded-[10px] bg-rose-50 border border-rose-200/80 text-rose-700 text-[13px] font-medium flex items-center gap-2"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
               <span>{error}</span>
@@ -143,17 +143,17 @@ export const LoginPage: React.FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} noValidate className="flex flex-col">
-            {/* 8. Email Address Field */}
-            <div className="mb-5 sm:mb-6">
+            {/* Email Address Field */}
+            <div className="mb-4">
               <label
                 htmlFor="email"
-                className="block text-[14px] font-semibold text-[#172B55] mb-2 sm:mb-2.5"
+                className="block text-[13px] sm:text-[14px] font-semibold text-[#172B55] mb-1.5 sm:mb-2"
               >
                 Email Address
               </label>
               <div className="relative flex items-center">
                 <Mail
-                  className="w-[19px] h-[19px] text-[#94A3B8] absolute left-4 pointer-events-none"
+                  className="w-[18px] h-[18px] text-[#94A3B8] absolute left-3.5 pointer-events-none"
                   aria-hidden="true"
                 />
                 <input
@@ -162,24 +162,24 @@ export const LoginPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email address"
-                  className="w-full h-[56px] pl-12 pr-4 bg-white border border-[#DCE3EE] rounded-[10px] text-[15px] text-[#172B55] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#48258B] focus:ring-3 focus:ring-[#48258B]/10 transition-all"
+                  className="w-full h-[50px] pl-11 pr-4 bg-white border border-[#DCE3EE] rounded-[10px] text-[14px] sm:text-[15px] text-[#172B55] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#48258B] focus:ring-3 focus:ring-[#48258B]/10 transition-all"
                   autoComplete="email"
                   required
                 />
               </div>
             </div>
 
-            {/* 9. Password Field */}
-            <div className="mb-2">
+            {/* Password Field */}
+            <div className="mb-1.5">
               <label
                 htmlFor="password"
-                className="block text-[14px] font-semibold text-[#172B55] mb-2 sm:mb-2.5"
+                className="block text-[13px] sm:text-[14px] font-semibold text-[#172B55] mb-1.5 sm:mb-2"
               >
                 Password
               </label>
               <div className="relative flex items-center">
                 <Lock
-                  className="w-[19px] h-[19px] text-[#94A3B8] absolute left-4 pointer-events-none"
+                  className="w-[18px] h-[18px] text-[#94A3B8] absolute left-3.5 pointer-events-none"
                   aria-hidden="true"
                 />
                 <input
@@ -188,52 +188,52 @@ export const LoginPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full h-[56px] pl-12 pr-12 bg-white border border-[#DCE3EE] rounded-[10px] text-[15px] text-[#172B55] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#48258B] focus:ring-3 focus:ring-[#48258B]/10 transition-all"
+                  className="w-full h-[50px] pl-11 pr-11 bg-white border border-[#DCE3EE] rounded-[10px] text-[14px] sm:text-[15px] text-[#172B55] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#48258B] focus:ring-3 focus:ring-[#48258B]/10 transition-all"
                   autoComplete="current-password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 text-[#71809B] hover:text-[#172B55] focus:outline-none p-1 rounded-md transition-colors"
+                  className="absolute right-3.5 text-[#71809B] hover:text-[#172B55] focus:outline-none p-1 rounded-md transition-colors"
                   tabIndex={0}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
-                    <EyeOff className="w-[19px] h-[19px]" aria-hidden="true" />
+                    <EyeOff className="w-[18px] h-[18px]" aria-hidden="true" />
                   ) : (
-                    <Eye className="w-[19px] h-[19px]" aria-hidden="true" />
+                    <Eye className="w-[18px] h-[18px]" aria-hidden="true" />
                   )}
                 </button>
               </div>
             </div>
 
-            {/* 10. Forgot Password Link: Aligned to right directly below password */}
-            <div className="flex justify-end mt-2 mb-5">
+            {/* Forgot Password Link */}
+            <div className="flex justify-end mt-1.5 mb-4">
               <button
                 type="button"
                 onClick={() =>
                   alert('For security reasons, password recovery must be initiated by contacting the Hostel Administrator.')
                 }
-                className="text-[14px] font-semibold text-[#48258B] hover:underline focus:outline-none transition-all cursor-pointer"
+                className="text-[13px] font-semibold text-[#48258B] hover:underline focus:outline-none transition-all cursor-pointer"
               >
                 Forgot password?
               </button>
             </div>
 
-            {/* 11. Sign In Button: Height 56px, Radius 10px, Background #48258B */}
+            {/* Sign In Button */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-[56px] rounded-[10px] bg-[#48258B] hover:bg-[#3C1E75] active:bg-[#341867] text-white text-[16px] sm:text-[17px] font-semibold shadow-sm flex items-center justify-center gap-2.5 transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:ring-3 focus:ring-[#48258B]/20"
+              className="w-full h-[50px] rounded-[10px] bg-[#48258B] hover:bg-[#3C1E75] active:bg-[#341867] text-white text-[15px] sm:text-[16px] font-semibold shadow-sm flex items-center justify-center gap-2 transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:ring-3 focus:ring-[#48258B]/20"
             >
               <span>{isSubmitting ? 'Signing in...' : 'Sign In'}</span>
               <ArrowRight className="w-[18px] h-[18px] stroke-[2.2]" aria-hidden="true" />
             </button>
 
-            {/* 13. Footer Copyright: Centered inside card with generous whitespace */}
-            <p className="text-[13px] text-[#8A98AE] text-center mt-8 sm:mt-10 font-normal">
-              © 2025 Zella Ladies Hostel. All rights reserved.
+            {/* Footer Copyright */}
+            <p className="text-[12px] sm:text-[13px] text-[#8A98AE] text-center mt-6 sm:mt-7 font-normal">
+              © 2026 Zella Ladies Hostel. All rights reserved.
             </p>
           </form>
         </div>
