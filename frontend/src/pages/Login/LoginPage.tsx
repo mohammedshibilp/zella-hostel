@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import zellaLogo from '../../assets/zella_logo.png';
-import loginLifestyle from '../../assets/login_lifestyle.png';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -72,39 +71,30 @@ export const LoginPage: React.FC = () => {
       >
         <div className="w-full max-w-[520px] xl:max-w-[560px] flex flex-col items-start text-left">
           {/* Logo */}
-          <div className="flex flex-col items-start mb-4">
+          <div className="flex flex-col items-start mb-5">
             <img
               src={zellaLogo}
               alt="Zella Ladies Hostel"
-              className="h-10 xl:h-11 w-auto object-contain"
+              className="h-11 xl:h-12 w-auto object-contain"
             />
-            <span className="text-[11px] uppercase font-bold text-[#172B55] tracking-[3.8px] mt-2.5">
+            <span className="text-[11px] xl:text-[12px] uppercase font-bold text-[#172B55] tracking-[4px] mt-3">
               ENTERPRISE MANAGEMENT SYSTEM
             </span>
           </div>
 
           {/* Subtle pink horizontal accent line */}
-          <div className="w-12 h-[2.5px] bg-[#E60073] rounded-full mb-6 xl:mb-7" />
+          <div className="w-14 h-[3px] bg-[#E60073] rounded-full mb-8 xl:mb-10" />
 
           {/* Headline: Exactly two lines */}
-          <h2 className="text-[38px] xl:text-[42px] font-medium text-[#172B55] leading-[1.1] tracking-tight mb-3 xl:mb-4">
+          <h2 className="text-[40px] xl:text-[46px] font-medium text-[#172B55] leading-[1.15] tracking-tight mb-5 xl:mb-6">
             Safe Spaces.<br />
             Stronger Futures.
           </h2>
 
-          {/* Subtitle: Max width 400px */}
-          <p className="text-[17px] xl:text-[18px] text-[#71809B] leading-[1.5] max-w-[400px] mb-7 xl:mb-8">
+          {/* Subtitle: Max width 420px */}
+          <p className="text-[18px] xl:text-[19px] text-[#71809B] leading-[1.6] max-w-[420px]">
             Simplifying hostel management for a safer, more comfortable living experience.
           </p>
-
-          {/* Lower Visual: Subtle lifestyle image with plant and books */}
-          <div className="w-full max-w-[440px] xl:max-w-[470px] rounded-[16px] overflow-hidden border border-[#E8ECF2] shadow-[0_4px_20px_rgba(20,35,70,0.03)] bg-white">
-            <img
-              src={loginLifestyle}
-              alt="Safe Spaces. Stronger Futures - Safer Students, Better Management, Brighter Tomorrows"
-              className="w-full h-auto aspect-[465/272] object-cover"
-            />
-          </div>
         </div>
       </section>
 
