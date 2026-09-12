@@ -101,12 +101,12 @@ DASHBOARD UPDATED (Real-time recalculation)
 - Search filter by resident name, room number, or bed number.
 - Bulk "Mark All Present" and "Mark All Absent" shortcuts.
 
-### H. Non-Hardcoded Dashboard Metrics
-- **TOTAL GUESTS**: Live count of active residents.
-- **VACANCIES**: Unoccupied beds (`total_beds - occupied_beds`).
-- **ACTIVE BOOKINGS**: Confirmed bookings awaiting check-in.
-- **OCCUPANCY RATE**: Percentage calculation.
-- **Floor-wise Bed Occupancy**: Visual breakdown of Floors 1, 2, and 3.
+### H. Core Dashboard Metrics (Client Specified)
+The dashboard strictly focuses on the 3 core metrics required by the client:
+- **TOTAL GUESTS**: Real-time count of active residents currently admitted in the hostel.
+- **VACANCIES**: Real-time count of vacant beds (`total_beds - occupied_beds`) across all 23 rooms.
+- **BOOKING**: Real-time count of confirmed advance bookings awaiting check-in.
+- **Quick Action Hub**: Clean shortcuts to New Admission, 23-Room Chart, Fee Receipts, and Daily Attendance without cluttering charts.
 
 ---
 
