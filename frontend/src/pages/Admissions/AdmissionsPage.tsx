@@ -372,11 +372,11 @@ export const AdmissionsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
-              label="Select Room (from 23 rooms)"
+              label="Select Room"
               value={formData.room_id}
               onChange={(e) => handleRoomChange(e.target.value)}
               options={[
-                { value: '', label: 'Select Room...' },
+                { value: '', label: rooms.length > 0 ? 'Select Room...' : 'No rooms available' },
                 ...rooms.map((r) => ({
                   value: r.id,
                   label: `Room ${r.room_number} (Fl ${r.floor} • ${r.vacant_count} vacant)`,

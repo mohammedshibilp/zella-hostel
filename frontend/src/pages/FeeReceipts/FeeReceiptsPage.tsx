@@ -449,8 +449,8 @@ export const FeeReceiptsPage: React.FC = () => {
                 <div>
                   <span className="text-slate-400 block mb-0.5">Room & Bed:</span>
                   <span className="text-sm font-bold text-navy-900 block">
-                    Room {selectedReceipt.room_number || selectedReceipt.guest?.room_number || '101'} • Bed{' '}
-                    {selectedReceipt.guest?.bed_number || '101-A'}
+                    Room {selectedReceipt.room_number || selectedReceipt.guest?.room_number || 'N/A'} • Bed{' '}
+                    {selectedReceipt.guest?.bed_number || 'N/A'}
                   </span>
                   <span className="text-slate-600 block">
                     Payment Mode: {selectedReceipt.payment_mode}

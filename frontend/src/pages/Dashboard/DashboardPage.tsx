@@ -93,7 +93,7 @@ export const DashboardPage: React.FC = () => {
                 VACANCIES
               </span>
               <div className="text-3xl sm:text-4xl font-black text-secondary tracking-tight">
-                {metrics?.vacancies ?? 49}
+                {metrics?.vacancies ?? 0}
               </div>
             </div>
             <div className="w-11 h-11 rounded-xl bg-secondary text-white flex items-center justify-center shadow-sm shadow-secondary/20 shrink-0">
@@ -106,7 +106,7 @@ export const DashboardPage: React.FC = () => {
               to="/rooms"
               className="text-xs font-bold text-secondary hover:text-amber-700 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
             >
-              <span>23-Room Chart</span>
+              <span>Room Management</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -173,7 +173,7 @@ export const DashboardPage: React.FC = () => {
               <DoorOpen className="w-5 h-5" />
             </div>
             <span className="text-xs font-bold text-navy-900 group-hover:text-secondary transition-colors">
-              23-Room Chart
+              Room Management
             </span>
           </Link>
 

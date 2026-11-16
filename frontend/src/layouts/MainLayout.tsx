@@ -57,7 +57,7 @@ export const MainLayout: React.FC = () => {
         { name: 'Admission', path: '/admissions', icon: <UserPlus className="w-5 h-5" /> },
         { name: 'Guests', path: '/guests', icon: <Users className="w-5 h-5" /> },
         { name: 'Booking', path: '/bookings', icon: <CalendarCheck className="w-5 h-5" /> },
-        { name: 'Room', path: '/rooms', icon: <DoorOpen className="w-5 h-5" /> },
+        { name: 'Rooms', path: '/rooms', icon: <DoorOpen className="w-5 h-5" /> },
         { name: 'Attendance', path: '/attendance', icon: <ClipboardCheck className="w-5 h-5" /> },
       ],
     },

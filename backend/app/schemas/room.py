@@ -14,6 +14,11 @@ class BedCreate(BedBase):
     room_id: int
 
 
+class BedAdd(BaseModel):
+    bed_number: Optional[str] = None
+    notes: Optional[str] = None
+
+
 class BedResponse(BedBase):
     model_config = ConfigDict(from_attributes=True)
 
@@ -32,6 +37,7 @@ class RoomBase(BaseModel):
     floor: int
     capacity: int = 2
     room_type: str = "Standard Sharing"
+    price: Optional[float] = 0.0
     status: str = "Available"
     notes: Optional[str] = None
 
@@ -41,9 +47,11 @@ class RoomCreate(RoomBase):
 
 
 class RoomUpdate(BaseModel):
+    room_number: Optional[str] = None
     floor: Optional[int] = None
     capacity: Optional[int] = None
     room_type: Optional[str] = None
+    price: Optional[float] = None
     status: Optional[str] = None
     notes: Optional[str] = None
 

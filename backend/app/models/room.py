@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Float
 from sqlalchemy.orm import relationship
 from app.database.session import Base
 
@@ -11,8 +11,9 @@ class Room(Base):
     room_number = Column(String(50), unique=True, index=True, nullable=False)
     floor = Column(Integer, nullable=False)  # 1, 2, 3
     capacity = Column(Integer, default=2, nullable=False)
-    room_type = Column(String(50), default="Standard Sharing")  # Single, Double, Triple
-    status = Column(String(50), default="Available")  # Available, Full, Maintenance
+    room_type = Column(String(50), default="Standard Sharing")  # Single, Double, Triple, Dormitory
+    price = Column(Float, nullable=True, default=0.0)
+    status = Column(String(50), default="Available")  # Available, Active, Inactive, Full, Maintenance
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 

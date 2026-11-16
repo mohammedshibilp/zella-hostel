@@ -66,7 +66,9 @@ export const BookingsPage: React.FC = () => {
   };
 
   const currentRoom = rooms.find((r) => r.id.toString() === formData.room_id);
-  const availableBeds = currentRoom ? currentRoom.beds.filter((b) => !b.is_occupied) : [];
+  const availableBeds = currentRoom
+    ? currentRoom.beds.filter((b) => !b.is_occupied && b.status === 'Available' && !b.reserved_guest_name)
+    : [];
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -271,17 +273,25 @@ export const BookingsPage: React.FC = () => {
             />
           </div>
 
+          {rooms.length === 0 && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs">
+              <strong>Notice:</strong> No hostel rooms have been added to the system yet. Please add rooms in the Room Management section first.
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Select Room"
               value={formData.room_id}
               onChange={(e) => handleRoomChange(e.target.value)}
               options={[
-                { value: '', label: 'Select Room...' },
-                ...rooms.map((r) => ({
-                  value: r.id,
-                  label: `Room ${r.room_number} (Fl ${r.floor} • ${r.vacant_count} vacant)`,
-                })),
+                { value: '', label: rooms.length > 0 ? 'Select Room...' : 'No rooms available' },
+                ...rooms
+                  .filter((r) => r.status === 'Available' || r.status === 'Active')
+                  .map((r) => ({
+                    value: r.id,
+                    label: `Room ${r.room_number} (Fl ${r.floor} • ${r.vacant_count} vacant)`,
+                  })),
               ]}
               required
             />
@@ -290,10 +300,17 @@ export const BookingsPage: React.FC = () => {
               value={formData.bed_id}
               onChange={(e) => setFormData({ ...formData, bed_id: e.target.value })}
               options={[
-                { value: '', label: availableBeds.length > 0 ? 'Select Bed...' : 'No vacant beds' },
+                {
+                  value: '',
+                  label: !formData.room_id
+                    ? 'Select Room First...'
+                    : availableBeds.length > 0
+                    ? 'Select Bed...'
+                    : 'No vacant beds available',
+                },
                 ...availableBeds.map((b) => ({
                   value: b.id,
-                  label: `Bed ${b.bed_number}`,
+                  label: b.bed_number.startsWith('Bed ') ? b.bed_number : `Bed ${b.bed_number}`,
                 })),
               ]}
               required

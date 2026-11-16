@@ -38,12 +38,33 @@ export interface Room {
   floor: number;
   capacity: number;
   room_type: string;
-  status: 'Available' | 'Full' | 'Maintenance';
+  price?: number;
+  status: 'Available' | 'Full' | 'Maintenance' | 'Active' | 'Inactive';
   notes?: string;
   created_at: string;
   beds: Bed[];
   occupied_count: number;
   vacant_count: number;
+}
+
+export interface RoomCreatePayload {
+  room_number: string;
+  floor: number;
+  capacity: number;
+  room_type: string;
+  price?: number;
+  status?: string;
+  notes?: string;
+}
+
+export interface RoomUpdatePayload {
+  room_number?: string;
+  floor?: number;
+  capacity?: number;
+  room_type?: string;
+  price?: number;
+  status?: string;
+  notes?: string;
 }
 
 export interface Package {

@@ -74,54 +74,8 @@ def seed_database():
                 db.add(pkg)
                 logger.info(f"Created package: {pkg_data['name']}")
 
-        # 3. Seed Exactly 23 Rooms:
-        # Floor 1: 101 to 110 (10 rooms)
-        # Floor 2: 201 to 210 (10 rooms)
-        # Floor 3: 301 to 303 (3 rooms)
-        # Total = 23 rooms
-        rooms_spec = []
-        for r_num in range(101, 111):
-            rooms_spec.append({"room_number": str(r_num), "floor": 1, "capacity": 2, "room_type": "Double Sharing"})
-        for r_num in range(201, 211):
-            rooms_spec.append({"room_number": str(r_num), "floor": 2, "capacity": 2, "room_type": "Double Sharing"})
-        for r_num in range(301, 304):
-            rooms_spec.append({"room_number": str(r_num), "floor": 3, "capacity": 3, "room_type": "Triple Sharing"})
-
-        total_seeded_rooms = 0
-        total_seeded_beds = 0
-
-        for r_spec in rooms_spec:
-            room = db.query(Room).filter(Room.room_number == r_spec["room_number"]).first()
-            if not room:
-                room = Room(
-                    room_number=r_spec["room_number"],
-                    floor=r_spec["floor"],
-                    capacity=r_spec["capacity"],
-                    room_type=r_spec["room_type"],
-                    status="Available",
-                    notes=f"Floor {r_spec['floor']} - {r_spec['room_type']}"
-                )
-                db.add(room)
-                db.flush()  # to get room.id
-
-                # Create beds for the room
-                letters = ["A", "B", "C", "D"]
-                for b_idx in range(r_spec["capacity"]):
-                    bed_label = f"{r_spec['room_number']}-{letters[b_idx]}"
-                    bed = Bed(
-                        room_id=room.id,
-                        bed_number=bed_label,
-                        is_occupied=False,
-                        status="Available"
-                    )
-                    db.add(bed)
-                    total_seeded_beds += 1
-                total_seeded_rooms += 1
-
-        if total_seeded_rooms > 0:
-            logger.info(f"Seeded {total_seeded_rooms} rooms and {total_seeded_beds} beds.")
-        else:
-            logger.info("Rooms and beds already seeded.")
+        # 3. Rooms & Beds: Removed hardcoded demo seed.
+        # Rooms and beds are managed dynamically by the admin via Room Management.
 
         # 4. Seed Hostel Settings
         default_settings = [

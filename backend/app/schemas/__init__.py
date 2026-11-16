@@ -15,6 +15,7 @@ from app.schemas.room import (
     RoomChartSummary,
     BedBase,
     BedCreate,
+    BedAdd,
     BedResponse,
 )
 from app.schemas.package import (
