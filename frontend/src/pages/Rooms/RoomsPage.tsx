@@ -323,50 +323,50 @@ export const RoomsPage: React.FC = () => {
       />
 
       {/* SUMMARY STATS CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card padding="sm" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary flex items-center justify-center shrink-0">
-            <DoorOpen className="w-5 h-5" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+        <Card padding="sm" className="p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary-50 text-primary flex items-center justify-center shrink-0">
+            <DoorOpen className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Rooms</div>
-            <div className="text-xl font-extrabold text-navy-900">{totalRoomsCount}</div>
-          </div>
-        </Card>
-
-        <Card padding="sm" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
-            <BedDouble className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Beds</div>
-            <div className="text-xl font-extrabold text-navy-900">{totalBedsCount}</div>
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider truncate">Total Rooms</div>
+            <div className="text-lg sm:text-xl font-extrabold text-navy-900">{totalRoomsCount}</div>
           </div>
         </Card>
 
-        <Card padding="sm" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-            <XCircle className="w-5 h-5" />
+        <Card padding="sm" className="p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+            <BedDouble className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Occupied Beds</div>
-            <div className="text-xl font-extrabold text-rose-600">{occupiedBedsCount}</div>
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider truncate">Total Beds</div>
+            <div className="text-lg sm:text-xl font-extrabold text-navy-900">{totalBedsCount}</div>
           </div>
         </Card>
 
-        <Card padding="sm" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-5 h-5" />
+        <Card padding="sm" className="p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+            <XCircle className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Vacant Beds</div>
-            <div className="text-xl font-extrabold text-emerald-600">{vacantBedsCount}</div>
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider truncate">Occupied Beds</div>
+            <div className="text-lg sm:text-xl font-extrabold text-rose-600">{occupiedBedsCount}</div>
+          </div>
+        </Card>
+
+        <Card padding="sm" className="p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider truncate">Vacant Beds</div>
+            <div className="text-lg sm:text-xl font-extrabold text-emerald-600">{vacantBedsCount}</div>
           </div>
         </Card>
       </div>
 
       {/* SEARCH AND FILTER BAR */}
-      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -375,7 +375,7 @@ export const RoomsPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search room number, type, or notes..."
-            className="w-full text-xs font-medium pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-navy-900 placeholder:text-slate-400"
+            className="w-full text-xs font-medium pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-navy-900 placeholder:text-slate-400"
           />
         </div>
 
@@ -383,11 +383,11 @@ export const RoomsPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* Dynamic Floor tabs */}
           {dynamicFloors.length > 0 && (
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl overflow-x-auto max-w-full">
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl overflow-x-auto touch-scroll max-w-full">
               <button
                 type="button"
                 onClick={() => setSelectedFloor(null)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
                   selectedFloor === null
                     ? 'bg-white text-navy-900 shadow-xs'
                     : 'text-slate-600 hover:text-navy-900'
@@ -400,7 +400,7 @@ export const RoomsPage: React.FC = () => {
                   key={fl}
                   type="button"
                   onClick={() => setSelectedFloor(fl)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
                     selectedFloor === fl
                       ? 'bg-white text-navy-900 shadow-xs'
                       : 'text-slate-600 hover:text-navy-900'
@@ -416,7 +416,7 @@ export const RoomsPage: React.FC = () => {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-2 bg-white text-navy-900 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-2 bg-white text-navy-900 focus:outline-none focus:ring-2 focus:ring-primary flex-1 sm:flex-initial"
           >
             <option value="">All Room Types</option>
             {dynamicTypes.map((t) => (
@@ -430,7 +430,7 @@ export const RoomsPage: React.FC = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-2 bg-white text-navy-900 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-2 bg-white text-navy-900 focus:outline-none focus:ring-2 focus:ring-primary flex-1 sm:flex-initial"
           >
             <option value="">All Statuses</option>
             <option value="Available">Available</option>
@@ -749,11 +749,11 @@ export const RoomsPage: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button variant="outline" type="button" onClick={() => setIsAddModalOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-slate-100">
+            <Button variant="outline" type="button" onClick={() => setIsAddModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button variant="primary" type="submit" isLoading={isSubmitting}>
+            <Button variant="primary" type="submit" isLoading={isSubmitting} className="w-full sm:w-auto">
               Save Room & Generate Beds
             </Button>
           </div>
@@ -840,11 +840,11 @@ export const RoomsPage: React.FC = () => {
             onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
           />
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button variant="outline" type="button" onClick={() => setIsEditModalOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-slate-100">
+            <Button variant="outline" type="button" onClick={() => setIsEditModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button variant="primary" type="submit" isLoading={isSubmitting}>
+            <Button variant="primary" type="submit" isLoading={isSubmitting} className="w-full sm:w-auto">
               Update Room
             </Button>
           </div>
@@ -908,15 +908,15 @@ export const RoomsPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+              <div className="flex flex-col gap-2 max-h-72 overflow-y-auto touch-scroll pr-1">
                 {selectedRoom.beds.map((bed) => (
                   <div
                     key={bed.id}
-                    className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between gap-3 shadow-xs hover:border-slate-300 transition-colors"
+                    className="p-3 rounded-xl border border-slate-200 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 shadow-xs hover:border-slate-300 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div
-                        className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs ${
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
                           bed.is_occupied
                             ? 'bg-rose-100 text-rose-700'
                             : bed.status === 'Maintenance'
@@ -929,18 +929,18 @@ export const RoomsPage: React.FC = () => {
                         {bed.bed_number.split('-')[1] || bed.bed_number}
                       </div>
 
-                      <div>
-                        <div className="text-xs font-bold text-navy-900">
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-navy-900 truncate">
                           {formatBedName(bed.bed_number)}
                         </div>
                         {bed.current_guest_name ? (
-                          <div className="text-[11px] text-slate-600 font-medium">
+                          <div className="text-[11px] text-slate-600 font-medium truncate">
                             <span className="font-semibold text-rose-700">{bed.current_guest_name}</span>
                             {bed.current_guest_contact && ` • ${bed.current_guest_contact}`}
                             {bed.admission_date && ` (Since ${bed.admission_date})`}
                           </div>
                         ) : bed.reserved_guest_name ? (
-                          <div className="text-[11px] text-indigo-700 font-semibold">
+                          <div className="text-[11px] text-indigo-700 font-semibold truncate">
                             Reserved: {bed.reserved_guest_name}
                           </div>
                         ) : (
@@ -951,28 +951,30 @@ export const RoomsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                       <StatusBadge status={bed.status} />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedBed(bed);
-                        }}
-                        className="text-xs px-2.5 py-1"
-                      >
-                        Manage
-                      </Button>
-                      {isAdmin && !bed.is_occupied && bed.status !== 'Reserved' && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteBedFromRoom(bed.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Delete Bed"
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedBed(bed);
+                          }}
+                          className="text-xs px-2.5 py-1"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                          Manage
+                        </Button>
+                        {isAdmin && !bed.is_occupied && bed.status !== 'Reserved' && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBedFromRoom(bed.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Delete Bed"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

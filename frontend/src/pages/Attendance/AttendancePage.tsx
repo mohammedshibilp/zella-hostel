@@ -233,15 +233,15 @@ export const AttendancePage: React.FC = () => {
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
           <input
             type="text"
             placeholder="Search resident or room..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="text-xs font-medium border border-slate-200 rounded-xl px-3 py-1.5 bg-slate-50 text-navy-900 focus:outline-none focus:bg-white focus:ring-1 focus:ring-primary w-48 sm:w-60"
+            className="text-xs font-medium border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 text-navy-900 focus:outline-none focus:bg-white focus:ring-1 focus:ring-primary w-full sm:w-60"
           />
-          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+          <span className="text-xs text-slate-400 font-medium whitespace-nowrap shrink-0">
             {filteredRows.length} residents
           </span>
         </div>
@@ -258,29 +258,29 @@ export const AttendancePage: React.FC = () => {
         </Card>
       ) : (
         <Card padding="none" className="overflow-hidden border border-slate-200">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
+          <div className="overflow-x-auto touch-scroll">
+            <table className="w-full min-w-[620px] sm:min-w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                  <th className="px-5 py-3.5">Resident</th>
-                  <th className="px-5 py-3.5">Room & Bed</th>
-                  <th className="px-5 py-3.5">Status</th>
-                  <th className="px-5 py-3.5">Remarks</th>
+                  <th className="px-3.5 sm:px-5 py-3 sm:py-3.5">Resident</th>
+                  <th className="px-3.5 sm:px-5 py-3 sm:py-3.5">Room & Bed</th>
+                  <th className="px-3.5 sm:px-5 py-3 sm:py-3.5">Status</th>
+                  <th className="px-3.5 sm:px-5 py-3 sm:py-3.5">Remarks</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredRows.map((row) => (
                   <tr key={row.guest_id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-5 py-3.5 font-bold text-navy-900">{row.guest_name}</td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-3.5 sm:px-5 py-3 sm:py-3.5 font-bold text-navy-900 whitespace-nowrap">{row.guest_name}</td>
+                    <td className="px-3.5 sm:px-5 py-3 sm:py-3.5 whitespace-nowrap">
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-                        <DoorOpen className="w-3.5 h-3.5 text-secondary" />
+                        <DoorOpen className="w-3.5 h-3.5 text-secondary shrink-0" />
                         <span>
                           Room {row.room_number || '—'} • Bed {row.bed_number || '—'}
                         </span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-3.5 sm:px-5 py-3 sm:py-3.5 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         {(['Present', 'Absent', 'Leave', 'Out'] as const).map((st) => {
                           const isSelected = row.status === st;
@@ -289,7 +289,7 @@ export const AttendancePage: React.FC = () => {
                               key={st}
                               type="button"
                               onClick={() => handleStatusChange(row.guest_id, st)}
-                              className={`px-3 py-1 rounded-xl text-xs font-semibold border transition-all ${
+                              className={`px-2.5 sm:px-3 py-1 sm:py-1 rounded-xl text-xs font-semibold border transition-all ${
                                 isSelected
                                   ? st === 'Present'
                                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
@@ -307,7 +307,7 @@ export const AttendancePage: React.FC = () => {
                         })}
                       </div>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-3.5 sm:px-5 py-3 sm:py-3.5 min-w-[160px]">
                       <input
                         type="text"
                         placeholder="Optional remarks..."

@@ -27,14 +27,14 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   return (
     <Card padding="none" className="overflow-hidden border border-slate-200">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-sm">
+      <div className="overflow-x-auto touch-scroll">
+        <table className="w-full min-w-[560px] sm:min-w-full text-left border-collapse text-sm">
           <thead>
             <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
               {columns.map((col, idx) => (
                 <th
                   key={idx}
-                  className={`px-5 py-3.5 ${
+                  className={`px-3.5 sm:px-5 py-3 sm:py-3.5 whitespace-nowrap ${
                     col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                   } ${col.className || ''}`}
                 >
@@ -71,7 +71,7 @@ export function DataTable<T>({
                   {columns.map((col, cIdx) => (
                     <td
                       key={cIdx}
-                      className={`px-5 py-3.5 text-navy-900 ${
+                      className={`px-3.5 sm:px-5 py-3 sm:py-3.5 text-navy-900 ${
                         col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                       } ${col.className || ''}`}
                     >

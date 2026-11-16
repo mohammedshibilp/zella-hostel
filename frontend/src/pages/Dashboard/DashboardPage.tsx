@@ -47,7 +47,7 @@ export const DashboardPage: React.FC = () => {
       />
 
       {/* THE 3 CORE METRICS REQUESTED BY CLIENT */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
         {/* 1. TOTAL GUESTS */}
         <Card
           padding="sm"
@@ -152,12 +152,12 @@ export const DashboardPage: React.FC = () => {
           <span>Quick Actions</span>
         </h3>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
           <Link
             to="/admissions"
-            className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-primary hover:shadow-md transition-all flex flex-col items-center justify-center text-center gap-2 group"
+            className="p-3 sm:p-4 rounded-2xl bg-white border border-slate-200 hover:border-primary hover:shadow-md transition-all flex flex-col items-center justify-center text-center gap-2 group active:scale-[0.98]"
           >
-            <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary group-hover:bg-primary group-hover:text-white transition-colors flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary group-hover:bg-primary group-hover:text-white transition-colors flex items-center justify-center shrink-0">
               <UserPlus className="w-5 h-5" />
             </div>
             <span className="text-xs font-bold text-navy-900 group-hover:text-primary transition-colors">
@@ -167,9 +167,9 @@ export const DashboardPage: React.FC = () => {
 
           <Link
             to="/rooms"
-            className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-secondary hover:shadow-md transition-all flex flex-col items-center justify-center text-center gap-2 group"
+            className="p-3 sm:p-4 rounded-2xl bg-white border border-slate-200 hover:border-secondary hover:shadow-md transition-all flex flex-col items-center justify-center text-center gap-2 group active:scale-[0.98]"
           >
-            <div className="w-10 h-10 rounded-xl bg-secondary-50 text-secondary group-hover:bg-secondary group-hover:text-white transition-colors flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-secondary-50 text-secondary group-hover:bg-secondary group-hover:text-white transition-colors flex items-center justify-center shrink-0">
               <DoorOpen className="w-5 h-5" />
             </div>
             <span className="text-xs font-bold text-navy-900 group-hover:text-secondary transition-colors">
@@ -179,9 +179,9 @@ export const DashboardPage: React.FC = () => {
 
           <Link
             to="/fee-receipts"
-            className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-primary hover:shadow-md transition-all flex flex-col items-center justify-center text-center gap-2 group"
+            className="p-3 sm:p-4 rounded-2xl bg-white border border-slate-200 hover:border-primary hover:shadow-md transition-all flex flex-col items-center justify-center text-center gap-2 group active:scale-[0.98]"
           >
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex items-center justify-center shrink-0">
               <Receipt className="w-5 h-5" />
             </div>
             <span className="text-xs font-bold text-navy-900 group-hover:text-emerald-700 transition-colors">
@@ -191,9 +191,9 @@ export const DashboardPage: React.FC = () => {
 
           <Link
             to="/attendance"
-            className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-primary hover:shadow-md transition-all flex flex-col items-center justify-center text-center gap-2 group"
+            className="p-3 sm:p-4 rounded-2xl bg-white border border-slate-200 hover:border-primary hover:shadow-md transition-all flex flex-col items-center justify-center text-center gap-2 group active:scale-[0.98]"
           >
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-primary group-hover:bg-primary group-hover:text-white transition-colors flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-purple-50 text-primary group-hover:bg-primary group-hover:text-white transition-colors flex items-center justify-center shrink-0">
               <CheckSquare className="w-5 h-5" />
             </div>
             <span className="text-xs font-bold text-navy-900 group-hover:text-primary transition-colors">

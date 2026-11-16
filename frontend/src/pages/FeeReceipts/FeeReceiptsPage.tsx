@@ -390,11 +390,11 @@ export const FeeReceiptsPage: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
           />
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button variant="outline" type="button" onClick={() => setIsCreateOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-slate-100">
+            <Button variant="outline" type="button" onClick={() => setIsCreateOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button variant="primary" type="submit" isLoading={isSubmitting}>
+            <Button variant="primary" type="submit" isLoading={isSubmitting} className="w-full sm:w-auto">
               Generate & Record
             </Button>
           </div>
@@ -414,30 +414,30 @@ export const FeeReceiptsPage: React.FC = () => {
             {/* Printable Receipt Canvas */}
             <div
               ref={receiptPrintRef}
-              className="p-6 sm:p-8 bg-white border border-slate-200 rounded-2xl shadow-xs flex flex-col gap-6"
+              className="p-4 sm:p-8 bg-white border border-slate-200 rounded-2xl shadow-xs flex flex-col gap-4 sm:gap-6"
             >
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-3 sm:gap-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-white">
-                    <Building2 className="w-6 h-6 text-secondary" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary flex items-center justify-center text-white shrink-0">
+                    <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-secondary" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-black text-navy-900 tracking-tight">ZELLA HOSTEL</h2>
-                    <p className="text-[11px] text-slate-500 font-medium">Residency Road, Knowledge Park</p>
+                    <h2 className="text-base sm:text-lg font-black text-navy-900 tracking-tight">ZELLA HOSTEL</h2>
+                    <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Residency Road, Knowledge Park</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+                <div className="text-left sm:text-right">
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 block">
                     OFFICIAL FEE RECEIPT
                   </span>
-                  <span className="text-base font-extrabold text-primary">{selectedReceipt.receipt_no}</span>
-                  <span className="text-[11px] text-slate-500 block">{selectedReceipt.date}</span>
+                  <span className="text-sm sm:text-base font-extrabold text-primary">{selectedReceipt.receipt_no}</span>
+                  <span className="text-[10px] sm:text-[11px] text-slate-500 block">{selectedReceipt.date}</span>
                 </div>
               </div>
 
               {/* Resident Details */}
-              <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-slate-50 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl bg-slate-50 text-xs">
                 <div>
                   <span className="text-slate-400 block mb-0.5">Received From:</span>
                   <span className="text-sm font-bold text-navy-900 block">{selectedReceipt.guest?.name}</span>
@@ -526,11 +526,12 @@ export const FeeReceiptsPage: React.FC = () => {
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3">
               <Button
                 variant="outline"
                 icon={<Printer className="w-4 h-4" />}
                 onClick={handlePrint}
+                className="w-full sm:w-auto"
               >
                 Print Receipt
               </Button>
@@ -539,6 +540,7 @@ export const FeeReceiptsPage: React.FC = () => {
                 icon={<Download className="w-4 h-4" />}
                 onClick={handleDownloadPdf}
                 isLoading={isExportingPdf}
+                className="w-full sm:w-auto"
               >
                 Download PDF
               </Button>

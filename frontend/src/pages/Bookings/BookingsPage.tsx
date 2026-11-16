@@ -223,13 +223,13 @@ export const BookingsPage: React.FC = () => {
         }
       />
 
-      <div className="flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status:</span>
+      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white p-3 rounded-2xl border border-slate-200">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider shrink-0">Status:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs font-medium border border-slate-200 rounded-xl px-3 py-1.5 bg-white text-navy-900"
+            className="text-xs font-medium border border-slate-200 rounded-xl px-3 py-1.5 bg-white text-navy-900 w-full sm:w-auto focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="">All Bookings</option>
             <option value="Confirmed">Confirmed Reservations</option>
@@ -333,11 +333,11 @@ export const BookingsPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button variant="outline" type="button" onClick={() => setIsCreateOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-slate-100">
+            <Button variant="outline" type="button" onClick={() => setIsCreateOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button variant="primary" type="submit" isLoading={isSubmitting}>
+            <Button variant="primary" type="submit" isLoading={isSubmitting} className="w-full sm:w-auto">
               Confirm Booking
             </Button>
           </div>

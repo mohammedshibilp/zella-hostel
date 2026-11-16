@@ -203,11 +203,11 @@ export const OthersPage: React.FC = () => {
               placeholder="Provide repair details..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-navy-900 focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm text-navy-900 focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Repair Cost (₹)"
               type="number"
@@ -226,11 +226,11 @@ export const OthersPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-slate-100">
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button variant="primary" type="submit" isLoading={isSubmitting}>
+            <Button variant="primary" type="submit" isLoading={isSubmitting} className="w-full sm:w-auto">
               Create Ticket
             </Button>
           </div>

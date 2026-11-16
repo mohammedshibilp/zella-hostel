@@ -211,58 +211,58 @@ export const AccountsPage: React.FC = () => {
       />
 
       {/* FINANCIAL SUMMARY METRIC CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card padding="sm" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <ArrowDownLeft className="w-6 h-6" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <Card padding="sm" className="p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <ArrowDownLeft className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Total Credits (Inflow)
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
+              Credits (Inflow)
             </span>
-            <span className="text-xl font-extrabold text-emerald-700">
+            <span className="text-base sm:text-xl font-extrabold text-emerald-700 truncate block">
               ₹{(summary?.total_credit || 0).toLocaleString()}
             </span>
           </div>
         </Card>
 
-        <Card padding="sm" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-            <ArrowUpRight className="w-6 h-6" />
+        <Card padding="sm" className="p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+            <ArrowUpRight className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Total Debits (Expense)
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
+              Debits (Expense)
             </span>
-            <span className="text-xl font-extrabold text-rose-600">
+            <span className="text-base sm:text-xl font-extrabold text-rose-600 truncate block">
               ₹{(summary?.total_debit || 0).toLocaleString()}
             </span>
           </div>
         </Card>
 
-        <Card padding="sm" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Wallet className="w-6 h-6" />
+        <Card padding="sm" className="p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <Wallet className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
               Cash in Hand
             </span>
-            <span className="text-xl font-extrabold text-navy-900">
+            <span className="text-base sm:text-xl font-extrabold text-navy-900 truncate block">
               ₹{(summary?.cash_balance || 0).toLocaleString()}
             </span>
           </div>
         </Card>
 
-        <Card padding="sm" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <Landmark className="w-6 h-6" />
+        <Card padding="sm" className="p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <Landmark className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
               Bank Balance
             </span>
-            <span className="text-xl font-extrabold text-navy-900">
+            <span className="text-base sm:text-xl font-extrabold text-navy-900 truncate block">
               ₹{(summary?.bank_balance || 0).toLocaleString()}
             </span>
           </div>
@@ -271,12 +271,12 @@ export const AccountsPage: React.FC = () => {
 
       {/* FILTER CONTROLS */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Filter className="w-4 h-4 text-slate-400" />
+        <div className="flex items-center gap-2 flex-wrap flex-1">
+          <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden sm:block" />
           <select
             value={entryTypeFilter}
             onChange={(e) => setEntryTypeFilter(e.target.value)}
-            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-1.5 bg-white text-navy-900"
+            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-1.5 bg-white text-navy-900 flex-1 sm:flex-initial"
           >
             <option value="">All Dr / Cr</option>
             <option value="Cr">Credit Only (Income)</option>
@@ -286,7 +286,7 @@ export const AccountsPage: React.FC = () => {
           <select
             value={channelFilter}
             onChange={(e) => setChannelFilter(e.target.value)}
-            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-1.5 bg-white text-navy-900"
+            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-1.5 bg-white text-navy-900 flex-1 sm:flex-initial"
           >
             <option value="">All Channels</option>
             <option value="Cash">Cash</option>
@@ -296,7 +296,7 @@ export const AccountsPage: React.FC = () => {
           <select
             value={txTypeFilter}
             onChange={(e) => setTxTypeFilter(e.target.value)}
-            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-1.5 bg-white text-navy-900"
+            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-1.5 bg-white text-navy-900 flex-1 sm:flex-initial"
           >
             <option value="">All Particulars</option>
             <option value="Guest">Guest Related</option>
@@ -304,7 +304,7 @@ export const AccountsPage: React.FC = () => {
           </select>
         </div>
 
-        <div className="text-xs font-bold text-slate-600">
+        <div className="text-xs font-bold text-slate-600 whitespace-nowrap">
           Net Balance:{' '}
           <span
             className={
@@ -421,11 +421,11 @@ export const AccountsPage: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, reference_no: e.target.value })}
           />
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-slate-100">
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button variant="primary" type="submit" isLoading={isSubmitting}>
+            <Button variant="primary" type="submit" isLoading={isSubmitting} className="w-full sm:w-auto">
               Save to Ledger
             </Button>
           </div>

@@ -268,10 +268,10 @@ export const EnquiriesPage: React.FC = () => {
       />
 
       {/* FILTER & SEARCH BAR */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200">
-        <form onSubmit={handleSearch} className="flex items-center gap-2 flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200">
+        <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:max-w-md">
           <div className="relative w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400 pointer-events-none" />
             <input
               type="text"
               placeholder="Search by name or contact number..."
@@ -280,17 +280,17 @@ export const EnquiriesPage: React.FC = () => {
               className="w-full text-xs font-medium border border-slate-200 rounded-xl pl-9 pr-3.5 py-2.5 bg-white text-navy-900 focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
-          <Button type="submit" variant="outline" size="sm">
+          <Button type="submit" variant="outline" size="sm" className="shrink-0 min-h-[40px]">
             Search
           </Button>
         </form>
 
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-400" />
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden sm:block" />
           <select
             value={modeFilter}
             onChange={(e) => setModeFilter(e.target.value)}
-            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-2 bg-white text-navy-900 focus:outline-none focus:ring-1 focus:ring-primary"
+            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-2 bg-white text-navy-900 focus:outline-none focus:ring-1 focus:ring-primary flex-1 sm:flex-initial"
           >
             <option value="">All Modes</option>
             <option value="Walk-in">Walk-in</option>
@@ -300,7 +300,7 @@ export const EnquiriesPage: React.FC = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-2 bg-white text-navy-900 focus:outline-none focus:ring-1 focus:ring-primary"
+            className="text-xs font-medium border border-slate-200 rounded-xl px-2.5 py-2 bg-white text-navy-900 focus:outline-none focus:ring-1 focus:ring-primary flex-1 sm:flex-initial"
           >
             <option value="">All Statuses</option>
             <option value="Open">Open</option>
@@ -416,15 +416,15 @@ export const EnquiriesPage: React.FC = () => {
               placeholder="Candidate food preferences, budget, joining timeline..."
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-navy-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm text-navy-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button variant="outline" type="button" onClick={() => setIsCreateOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-slate-100">
+            <Button variant="outline" type="button" onClick={() => setIsCreateOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button variant="primary" type="submit" isLoading={isSubmitting}>
+            <Button variant="primary" type="submit" isLoading={isSubmitting} className="w-full sm:w-auto">
               {editingEnquiry ? 'Save Changes' : 'Record Enquiry'}
             </Button>
           </div>

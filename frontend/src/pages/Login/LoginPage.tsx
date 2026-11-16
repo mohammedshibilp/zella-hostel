@@ -119,13 +119,13 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Login Card: Reduced compact size (460px max-width, 36px padding), 20px radius */}
-        <div className="w-full max-w-[460px] bg-[#FFFFFF] rounded-[20px] border border-[#E8ECF2] shadow-[0_16px_40px_rgba(20,35,70,0.06)] p-6 sm:p-9 transition-all">
+        <div className="w-full max-w-[460px] bg-[#FFFFFF] rounded-[20px] border border-[#E8ECF2] shadow-[0_16px_40px_rgba(20,35,70,0.06)] p-5 sm:p-9 transition-all">
           {/* Header */}
           <div className="mb-6 sm:mb-7">
-            <h1 className="text-[28px] sm:text-[30px] font-bold text-[#172B55] tracking-tight leading-tight">
+            <h1 className="text-[26px] sm:text-[30px] font-bold text-[#172B55] tracking-tight leading-tight">
               Welcome Back
             </h1>
-            <p className="text-[14px] sm:text-[15px] text-[#71809B] mt-1.5 font-normal leading-normal">
+            <p className="text-[13px] sm:text-[15px] text-[#71809B] mt-1.5 font-normal leading-normal">
               Sign in to your Zella Ladies Hostel account
             </p>
           </div>
@@ -162,7 +162,7 @@ export const LoginPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email address"
-                  className="w-full h-[50px] pl-11 pr-4 bg-white border border-[#DCE3EE] rounded-[10px] text-[14px] sm:text-[15px] text-[#172B55] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#48258B] focus:ring-3 focus:ring-[#48258B]/10 transition-all"
+                  className="w-full h-[50px] pl-11 pr-4 bg-white border border-[#DCE3EE] rounded-[10px] text-base sm:text-sm text-[#172B55] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#48258B] focus:ring-3 focus:ring-[#48258B]/10 transition-all"
                   autoComplete="email"
                   required
                 />
@@ -188,14 +188,14 @@ export const LoginPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full h-[50px] pl-11 pr-11 bg-white border border-[#DCE3EE] rounded-[10px] text-[14px] sm:text-[15px] text-[#172B55] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#48258B] focus:ring-3 focus:ring-[#48258B]/10 transition-all"
+                  className="w-full h-[50px] pl-11 pr-12 bg-white border border-[#DCE3EE] rounded-[10px] text-base sm:text-sm text-[#172B55] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#48258B] focus:ring-3 focus:ring-[#48258B]/10 transition-all"
                   autoComplete="current-password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 text-[#71809B] hover:text-[#172B55] focus:outline-none p-1 rounded-md transition-colors"
+                  className="absolute right-1 text-[#71809B] hover:text-[#172B55] focus:outline-none min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md transition-colors"
                   tabIndex={0}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >

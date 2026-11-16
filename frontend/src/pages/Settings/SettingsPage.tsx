@@ -276,11 +276,11 @@ export const SettingsPage: React.FC = () => {
             value={pkgForm.amenities}
             onChange={(e) => setPkgForm({ ...pkgForm, amenities: e.target.value })}
           />
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button variant="outline" type="button" onClick={() => setIsPackageModalOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-slate-100">
+            <Button variant="outline" type="button" onClick={() => setIsPackageModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button variant="secondary" type="submit">
+            <Button variant="secondary" type="submit" className="w-full sm:w-auto">
               Save Package
             </Button>
           </div>
@@ -318,11 +318,11 @@ export const SettingsPage: React.FC = () => {
             onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
             required
           />
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button variant="outline" type="button" onClick={() => setIsUserModalOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-slate-100">
+            <Button variant="outline" type="button" onClick={() => setIsUserModalOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button variant="primary" type="submit">
+            <Button variant="primary" type="submit" className="w-full sm:w-auto">
               Create Account
             </Button>
           </div>

@@ -113,10 +113,10 @@ export const GuestsPage: React.FC = () => {
       />
 
       {/* FILTER & SEARCH */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200">
-        <form onSubmit={handleSearch} className="flex items-center gap-2 flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200">
+        <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:max-w-md">
           <div className="relative w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400 pointer-events-none" />
             <input
               type="text"
               placeholder="Search by name, contact, or email..."
@@ -127,18 +127,18 @@ export const GuestsPage: React.FC = () => {
           </div>
           <button
             type="submit"
-            className="px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-200 hover:bg-slate-50 text-navy-900"
+            className="px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 hover:bg-slate-50 text-navy-900 shrink-0 min-h-[40px]"
           >
             Search
           </button>
         </form>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status:</span>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider shrink-0">Status:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs font-medium border border-slate-200 rounded-xl px-3 py-1.5 bg-white text-navy-900"
+            className="text-xs font-medium border border-slate-200 rounded-xl px-3 py-2 bg-white text-navy-900 w-full sm:w-auto focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="">All Guests</option>
             <option value="Active">Active Residents</option>
