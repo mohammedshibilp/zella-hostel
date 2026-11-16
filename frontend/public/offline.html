@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#3F2576">
+  <title>Offline — Zellahostel</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #F8F9FB;
+      color: #1E1B4B;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 24px;
+      padding: 2.5rem 2rem;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(30, 27, 75, 0.05);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .icon-container {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      background: rgba(63, 37, 118, 0.08);
+      color: #3F2576;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .icon-container svg {
+      width: 36px;
+      height: 36px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #1E1B4B;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+    p {
+      font-size: 0.875rem;
+      color: #64748B;
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      background: #FEF2F2;
+      color: #DC2626;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #DC2626;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .btn {
+      width: 100%;
+      padding: 0.85rem 1.25rem;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+      background: #3F2576;
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(63, 37, 118, 0.25);
+    }
+    .btn:hover {
+      background: #341E62;
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .footer-note {
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      color: #94A3B8;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-container">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+        <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+    </div>
+
+    <div class="status-badge">
+      <span class="pulse-dot"></span>
+      <span id="status-text">No Internet Connection</span>
+    </div>
+
+    <h1>You Are Currently Offline</h1>
+    <p>
+      Zellahostel requires an active internet connection to communicate securely with the hostel database and verify bookings, admissions, and financial records.
+    </p>
+
+    <button id="retry-btn" class="btn" onclick="retryConnection()">
+      Retry Connection
+    </button>
+
+    <div class="footer-note">
+      Cached pages and app shell remain accessible. The system will automatically reconnect as soon as network access is restored.
+    </div>
+  </div>
+
+  <script>
+    function retryConnection() {
+      const btn = document.getElementById('retry-btn');
+      btn.innerText = 'Checking Connection...';
+      btn.style.opacity = '0.7';
+
+      fetch('/api/health?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
+        .then(function(res) {
+          if (res.ok || res.status < 500) {
+            window.location.href = '/dashboard';
+          } else {
+            throw new Error('Server unreachable');
+          }
+        })
+        .catch(function() {
+          setTimeout(function() {
+            btn.innerText = 'Retry Connection';
+            btn.style.opacity = '1';
+          }, 600);
+        });
+    }
+
+    window.addEventListener('online', function() {
+      document.getElementById('status-text').innerText = 'Connection Restored!';
+      document.querySelector('.status-badge').style.background = '#ECFDF5';
+      document.querySelector('.status-badge').style.color = '#059669';
+      document.querySelector('.pulse-dot').style.background = '#059669';
+      setTimeout(function() {
+        window.location.href = '/dashboard';
+      }, 800);
+    });
+  </script>
+</body>
+</html>

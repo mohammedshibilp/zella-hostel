@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import zellaLogo from '../assets/zella_logo.png';
 import zellaIcon from '../assets/zella_icon.png';
+import { InstallButton } from '../components/Pwa/InstallButton';
 
 interface NavItem {
   name: string;
@@ -251,6 +252,9 @@ export const MainLayout: React.FC = () => {
             <X className="w-5 h-5" />
           </button>
         </div>
+        <div className="px-4 py-2 border-b border-slate-100">
+          <InstallButton variant="primary" size="sm" className="w-full justify-center" />
+        </div>
         <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-2 touch-scroll">{renderNavItems(true)}</div>
         <div className="p-4 border-t border-slate-100 flex items-center justify-between pb-safe shrink-0">
           <div className="text-xs">
@@ -293,6 +297,7 @@ export const MainLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <InstallButton variant="outline" size="sm" className="hidden sm:inline-flex" />
             <div className="flex items-center gap-2 pl-2">
               <div className="hidden sm:block text-right">
                 <div className="text-xs font-bold text-navy-900 leading-tight">{user?.full_name}</div>

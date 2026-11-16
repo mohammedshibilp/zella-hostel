@@ -9,6 +9,7 @@ from app.models.booking import Booking
 from app.models.attendance import Attendance
 from app.models.finance import FeeReceipt, AccountTransaction
 from app.models.settings import MaintenanceRecord, HostelSetting
+from app.models.notification import PushSubscription
 
 __all__ = [
     "Base",
@@ -26,4 +27,5 @@ __all__ = [
     "AccountTransaction",
     "MaintenanceRecord",
     "HostelSetting",
+    "PushSubscription",
 ]

@@ -17,7 +17,14 @@ import {
   UserCheck,
   Tag,
   Shield,
+  Smartphone,
+  RefreshCw,
+  Bell,
+  CheckCircle2,
 } from 'lucide-react';
+import { usePwa } from '../../context/PwaContext';
+import { notificationService } from '../../services/notificationService';
+import { InstallButton } from '../../components/Pwa/InstallButton';
 
 export const SettingsPage: React.FC = () => {
   const [packages, setPackages] = useState<Package[]>([]);
@@ -45,6 +52,11 @@ export const SettingsPage: React.FC = () => {
     role: 'STAFF',
   });
 
+  const { isInstalled, isOnline, checkForUpdates } = usePwa();
+  const [isPushSubscribed, setIsPushSubscribed] = useState<boolean>(false);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState<boolean>(false);
+  const [isTogglingPush, setIsTogglingPush] = useState<boolean>(false);
+
   const { success, error: toastError } = useToast();
 
   const loadData = async () => {
@@ -58,10 +70,53 @@ export const SettingsPage: React.FC = () => {
       setPackages(pkgs);
       setUsers(usrList);
       setHostelSettings(setList);
+
+      // Check push notification status
+      try {
+        const notifStatus = await notificationService.getStatus();
+        setIsPushSubscribed(notifStatus.is_subscribed);
+      } catch (e) {
+        // Ignored if offline
+      }
     } catch (err) {
       toastError('Failed to load system settings');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCheckPwaUpdates = async () => {
+    setIsCheckingUpdate(true);
+    try {
+      await checkForUpdates();
+      success('Checked for updates. You are on the latest version.', 'System Up to Date');
+    } catch (err) {
+      toastError('Unable to check for updates at this time.');
+    } finally {
+      setTimeout(() => setIsCheckingUpdate(false), 500);
+    }
+  };
+
+  const handleTogglePush = async () => {
+    setIsTogglingPush(true);
+    try {
+      if (isPushSubscribed) {
+        await notificationService.unsubscribe();
+        setIsPushSubscribed(false);
+        success('Push notifications disabled for this device.', 'Notifications Updated');
+      } else {
+        const subscribed = await notificationService.subscribe();
+        if (subscribed) {
+          setIsPushSubscribed(true);
+          success('Push notifications successfully enabled!', 'Subscribed');
+        } else {
+          toastError('Push notification permission was not granted.');
+        }
+      }
+    } catch (err: any) {
+      toastError(err.response?.data?.detail || 'Failed to update push notifications');
+    } finally {
+      setIsTogglingPush(false);
     }
   };
 
@@ -155,6 +210,68 @@ export const SettingsPage: React.FC = () => {
         title="Hostel Administration & Settings"
         subtitle="Manage room fee plans, staff portal access, and commercial hostel configurations"
       />
+
+      {/* PROGRESSIVE WEB APP & SYSTEM CAPABILITIES */}
+      <Card padding="md" className="border-primary/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <Smartphone className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-navy-900">Progressive Web App (PWA)</h3>
+              <p className="text-xs text-slate-500">Device installation, offline caching, and operational alerts</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <InstallButton variant="primary" size="sm" showInstalledBadge={true} />
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />}
+              onClick={handleCheckPwaUpdates}
+              disabled={isCheckingUpdate}
+            >
+              Check for Updates
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 text-xs">
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">App Mode</span>
+            <span className="font-extrabold text-navy-900 flex items-center gap-1.5 text-xs">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${isInstalled ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <span>{isInstalled ? 'Installed Standalone App' : 'Browser Session (Installable)'}</span>
+            </span>
+          </div>
+
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Network & Cache</span>
+            <span className="font-extrabold text-navy-900 flex items-center gap-1.5 text-xs">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+              <span>{isOnline ? 'Online (Real-time DB Sync)' : 'Offline (Cached Shell)'}</span>
+            </span>
+          </div>
+
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Push Notifications</span>
+            <div className="flex items-center justify-between">
+              <span className="font-extrabold text-navy-900 text-xs">
+                {isPushSubscribed ? 'Active on Device' : 'Disabled'}
+              </span>
+              <button
+                type="button"
+                onClick={handleTogglePush}
+                disabled={isTogglingPush}
+                className="text-xs font-bold text-primary hover:text-primary-800 transition-colors"
+              >
+                {isTogglingPush ? 'Updating...' : isPushSubscribed ? 'Disable' : 'Enable'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       {/* HOSTEL CONFIGURATION SECTION */}
       <Card padding="md">

@@ -19,6 +19,7 @@ from app.api.fee_receipts import router as fee_receipts_router
 from app.api.accounts import router as accounts_router
 from app.api.settings import router as settings_router
 from app.api.reports import router as reports_router
+from app.api.notifications import router as notifications_router
 
 
 @asynccontextmanager
@@ -52,11 +53,16 @@ app.add_middleware(
 
 # Health check
 @app.get("/health", tags=["Health"])
+@app.get("/api/health", tags=["Health"])
 def health_check():
     return {"status": "healthy", "service": settings.PROJECT_NAME}
 
 # Mount API Routers
 v1 = settings.API_V1_STR
+@app.get(f"{v1}/health", tags=["Health"])
+def v1_health_check():
+    return {"status": "healthy", "service": settings.PROJECT_NAME}
+
 app.include_router(auth_router, prefix=v1)
 app.include_router(dashboard_router, prefix=v1)
 app.include_router(rooms_router, prefix=v1)
@@ -70,3 +76,4 @@ app.include_router(fee_receipts_router, prefix=v1)
 app.include_router(accounts_router, prefix=v1)
 app.include_router(settings_router, prefix=v1)
 app.include_router(reports_router, prefix=v1)
+app.include_router(notifications_router, prefix=v1)
