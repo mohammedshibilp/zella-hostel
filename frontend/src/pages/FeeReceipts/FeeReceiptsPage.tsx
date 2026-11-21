@@ -10,6 +10,8 @@ import { Input } from '../../components/Input';
 import { Select } from '../../components/Select';
 import { Card } from '../../components/Card';
 import { useToast } from '../../context/ToastContext';
+import { ZellaHostelSeal } from '../../components/ZellaHostelSeal';
+import zellaLogo from '../../assets/zella_logo.png';
 import {
   Plus,
   Receipt,
@@ -135,6 +137,36 @@ export const FeeReceiptsPage: React.FC = () => {
     window.print();
   };
 
+  const formatDateDMY = (dateStr?: string | null): string => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('T')[0].split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return dateStr;
+  };
+
+  const formatRoomBed = (receipt: FeeReceipt): string => {
+    const room = receipt.room_number || receipt.guest?.room_number || '101';
+    const bed = receipt.guest?.bed_number || 'Not Assigned';
+    return `Room ${room} · Bed ${bed}`;
+  };
+
+  const formatPackage = (receipt: FeeReceipt): string => {
+    return receipt.package_name || (receipt.guest as any)?.package_name || 'Standard Double Sharing';
+  };
+
+  const formatBillingPeriod = (receipt: FeeReceipt): string => {
+    if (receipt.billing_period) return receipt.billing_period;
+    if (receipt.period_start && receipt.period_end) {
+      return `${formatDateDMY(receipt.period_start)} to ${formatDateDMY(receipt.period_end)}`;
+    }
+    if (receipt.period_start) {
+      return `${formatDateDMY(receipt.period_start)} to Month-end`;
+    }
+    return `${formatDateDMY(receipt.date)} to Month-end`;
+  };
+
   const handleDownloadPdf = async () => {
     if (!receiptPrintRef.current) return;
     setIsExportingPdf(true);
@@ -143,10 +175,17 @@ export const FeeReceiptsPage: React.FC = () => {
       const html2pdf = html2pdfModule.default || html2pdfModule;
 
       const opt = {
-        margin: 10,
+        margin: [10, 12, 10, 12],
         filename: `${selectedReceipt?.receipt_no || 'Fee_Receipt'}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          scrollY: 0,
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       };
 
@@ -405,128 +444,267 @@ export const FeeReceiptsPage: React.FC = () => {
       <Modal
         isOpen={!!selectedReceipt}
         onClose={() => setSelectedReceipt(null)}
-        title="Fee Payment Voucher"
+        title="Official Fee Receipt Voucher"
         subtitle={selectedReceipt?.receipt_no}
-        maxWidth="lg"
+        maxWidth="3xl"
       >
         {selectedReceipt && (
-          <div className="flex flex-col gap-6">
-            {/* Printable Receipt Canvas */}
-            <div
-              ref={receiptPrintRef}
-              className="p-4 sm:p-8 bg-white border border-slate-200 rounded-2xl shadow-xs flex flex-col gap-4 sm:gap-6"
-            >
-              {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-3 sm:gap-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary flex items-center justify-center text-white shrink-0">
-                    <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-secondary" />
-                  </div>
+          <div className="flex flex-col gap-5">
+            {/* Action Bar */}
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <span className="text-xs text-slate-500 font-medium">
+                Official Institutional Fee Receipt – Ready for A4 Print & PDF Download
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  icon={<Printer className="w-4 h-4" />}
+                  onClick={handlePrint}
+                  className="w-full sm:w-auto"
+                >
+                  Print Receipt
+                </Button>
+                <Button
+                  variant="primary"
+                  icon={<Download className="w-4 h-4" />}
+                  onClick={handleDownloadPdf}
+                  isLoading={isExportingPdf}
+                  className="w-full sm:w-auto"
+                >
+                  Download PDF
+                </Button>
+              </div>
+            </div>
+
+            {/* Scrollable Container for Mobile Responsiveness */}
+            <div className="w-full overflow-x-auto bg-slate-100/70 p-2 sm:p-6 rounded-xl border border-slate-200/80 flex justify-center">
+              {/* Printable Receipt Canvas Matching Reference PDF Exactly */}
+              <div
+                id="printable-receipt"
+                ref={receiptPrintRef}
+                className="w-full max-w-[690px] bg-white border border-slate-200 shadow-sm p-6 sm:p-10 text-slate-800 text-left font-sans shrink-0 select-text"
+                style={{
+                  minWidth: '320px',
+                  fontFamily: 'Montserrat, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                }}
+              >
+                {/* 1. TOP HEADER */}
+                <div className="flex justify-between items-start gap-4">
+                  {/* Left: Official Logo & Address */}
                   <div>
-                    <h2 className="text-base sm:text-lg font-black text-navy-900 tracking-tight">ZELLA HOSTEL</h2>
-                    <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Residency Road, Knowledge Park</p>
+                    <img
+                      src={zellaLogo}
+                      alt="Zella Ladies Hostel"
+                      className="h-12 sm:h-14 w-auto object-contain object-left mb-3"
+                    />
+                    <h1 className="text-xs sm:text-sm font-bold tracking-tight text-slate-900 uppercase">
+                      ZELLA LADIES HOSTEL
+                    </h1>
+                    <div className="text-[11px] text-slate-600 leading-snug mt-1">
+                      <p>Musaffa Tower, Opp. Bharat Petroleum, Near Neha Hospital,</p>
+                      <p>Main Road, Kottakkal, Malappuram Dist - 676503</p>
+                      <p className="mt-0.5">Phone: +91 920 7000 923; +91 9207000924</p>
+                    </div>
+                  </div>
+
+                  {/* Right: Receipt Heading, Number & Date */}
+                  <div className="text-right shrink-0">
+                    <div className="text-xs sm:text-sm font-bold tracking-wider text-[#0A68A7] uppercase mb-1">
+                      OFFICIAL FEE RECEIPT
+                    </div>
+                    <div className="text-xl sm:text-2xl font-bold tracking-tight text-[#0F172A] mb-1">
+                      {selectedReceipt.receipt_no}
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-medium">
+                      Receipt Date: {formatDateDMY(selectedReceipt.date)}
+                    </div>
                   </div>
                 </div>
-                <div className="text-left sm:text-right">
-                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 block">
-                    OFFICIAL FEE RECEIPT
-                  </span>
-                  <span className="text-sm sm:text-base font-extrabold text-primary">{selectedReceipt.receipt_no}</span>
-                  <span className="text-[10px] sm:text-[11px] text-slate-500 block">{selectedReceipt.date}</span>
-                </div>
-              </div>
 
-              {/* Resident Details */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl bg-slate-50 text-xs">
-                <div>
-                  <span className="text-slate-400 block mb-0.5">Received From:</span>
-                  <span className="text-sm font-bold text-navy-900 block">{selectedReceipt.guest?.name}</span>
-                  <span className="text-slate-600 block">{selectedReceipt.guest?.contact_no}</span>
-                  {selectedReceipt.package_name && (
-                    <span className="text-[11px] text-primary font-medium">Package: {selectedReceipt.package_name}</span>
-                  )}
-                </div>
-                <div>
-                  <span className="text-slate-400 block mb-0.5">Room & Bed:</span>
-                  <span className="text-sm font-bold text-navy-900 block">
-                    Room {selectedReceipt.room_number || selectedReceipt.guest?.room_number || 'N/A'} • Bed{' '}
-                    {selectedReceipt.guest?.bed_number || 'N/A'}
-                  </span>
-                  <span className="text-slate-600 block">
-                    Payment Mode: {selectedReceipt.payment_mode}
-                    {selectedReceipt.payment_reference && ` (Ref: ${selectedReceipt.payment_reference})`}
-                  </span>
-                </div>
-              </div>
+                {/* Horizontal Divider */}
+                <div className="border-b border-slate-200 my-5" />
 
-              {/* Line items */}
-              <table className="w-full text-xs text-left">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase">
-                    <th className="py-2">Description</th>
-                    <th className="py-2 text-right">Amount (₹)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  <tr>
-                    <td className="py-3">
-                      <div className="font-bold text-navy-900">
-                        {selectedReceipt.fee_type || 'Hostel Accommodation & Boarding'}
+                {/* 2. RECEIPT & PAYMENT METADATA */}
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-xs mb-5">
+                  <div className="flex items-baseline">
+                    <span className="w-36 font-semibold text-slate-700 shrink-0">Receipt No:</span>
+                    <span className="text-slate-900 font-medium">{selectedReceipt.receipt_no}</span>
+                  </div>
+                  <div className="flex items-baseline">
+                    <span className="w-28 font-semibold text-slate-700 shrink-0">Receipt Date:</span>
+                    <span className="text-slate-900 font-medium">{formatDateDMY(selectedReceipt.date)}</span>
+                  </div>
+                  <div className="flex items-baseline">
+                    <span className="w-36 font-semibold text-slate-700 shrink-0 leading-tight">
+                      Payment<br />Transaction:
+                    </span>
+                    <span className="text-slate-900 font-medium">
+                      {selectedReceipt.payment_reference || selectedReceipt.fee_type || 'Hostel Fee Payment'}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline">
+                    <span className="w-28 font-semibold text-slate-700 shrink-0">Payment Mode:</span>
+                    <span className="text-slate-900 font-medium">{selectedReceipt.payment_mode}</span>
+                  </div>
+                </div>
+
+                {/* 3. RECEIVED FROM GUEST INFORMATION */}
+                <div className="mb-5">
+                  <div className="text-xs font-bold text-slate-900 mb-2">
+                    Received From:
+                  </div>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-baseline">
+                      <span className="w-28 font-medium text-slate-600 shrink-0">Name:</span>
+                      <span className="text-slate-900 font-semibold">{selectedReceipt.guest?.name || 'Resident'}</span>
+                    </div>
+                    {selectedReceipt.guest?.email && (
+                      <div className="flex items-baseline">
+                        <span className="w-28 font-medium text-slate-600 shrink-0">Email:</span>
+                        <span className="text-slate-800 font-normal">{selectedReceipt.guest.email}</span>
                       </div>
-                      <div className="text-slate-500 text-[11px]">
-                        Period: {selectedReceipt.period_start || selectedReceipt.date} to{' '}
-                        {selectedReceipt.period_end || 'Month-end'}
-                      </div>
-                      {selectedReceipt.remarks && (
-                        <div className="text-slate-400 italic text-[11px]">{selectedReceipt.remarks}</div>
-                      )}
-                    </td>
-                    <td className="py-3 text-right font-bold text-navy-900">
-                      ₹{selectedReceipt.amount.toLocaleString()}
-                    </td>
-                  </tr>
+                    )}
+                    <div className="flex items-baseline">
+                      <span className="w-28 font-medium text-slate-600 shrink-0">Mobile:</span>
+                      <span className="text-slate-800 font-normal">{selectedReceipt.guest?.contact_no || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-baseline">
+                      <span className="w-28 font-medium text-slate-600 shrink-0">Room &amp; Bed:</span>
+                      <span className="text-slate-800 font-normal">{formatRoomBed(selectedReceipt)}</span>
+                    </div>
+                    <div className="flex items-baseline">
+                      <span className="w-28 font-medium text-slate-600 shrink-0">Package:</span>
+                      <span className="text-slate-800 font-normal">{formatPackage(selectedReceipt)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. PROFESSIONAL PAYMENT TABLE WITH BLUE HEADER */}
+                <div className="border border-slate-200 overflow-hidden mb-5">
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr className="bg-[#0A68A7] text-white">
+                        <th className="py-2.5 px-4 font-semibold text-left w-[46%]">
+                          Nature of Service
+                        </th>
+                        <th className="py-2.5 px-4 font-semibold text-left w-[32%]">
+                          Billing Period
+                        </th>
+                        <th className="py-2.5 px-4 font-semibold text-right w-[22%]">
+                          Amount Collected (INR)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      <tr>
+                        <td className="py-3 px-4 text-slate-900 font-medium">
+                          {selectedReceipt.fee_type || 'Hostel Accommodation Fee'}
+                        </td>
+                        <td className="py-3 px-4 text-slate-600 font-normal">
+                          {formatBillingPeriod(selectedReceipt)}
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold text-slate-900">
+                          ₹ {selectedReceipt.amount.toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                      {selectedReceipt.discount ? (
+                        <tr className="bg-slate-50/50">
+                          <td className="py-2 px-4 text-slate-600 font-normal">
+                            Discount / Concession Applied
+                          </td>
+                          <td className="py-2 px-4 text-slate-500 font-normal">
+                            Special Offer
+                          </td>
+                          <td className="py-2 px-4 text-right font-semibold text-rose-600">
+                            - ₹ {selectedReceipt.discount.toLocaleString('en-IN')}
+                          </td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 5. FINANCIAL SUMMARY */}
+                <div className="space-y-1.5 text-xs mb-6">
+                  <div className="flex items-center">
+                    <span className="w-40 text-slate-700 font-normal">Total Fee</span>
+                    <span className="w-4 text-slate-500 text-center">:</span>
+                    <span className="font-semibold text-slate-900 pl-1">
+                      ₹ {selectedReceipt.amount.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="w-40 text-slate-700 font-normal">Amount Received</span>
+                    <span className="w-4 text-slate-500 text-center">:</span>
+                    <span className="font-semibold text-slate-900 pl-1">
+                      ₹ {(selectedReceipt.paid_amount ?? selectedReceipt.amount).toLocaleString('en-IN')}
+                    </span>
+                  </div>
                   {selectedReceipt.discount ? (
-                    <tr>
-                      <td className="py-2 text-slate-500 font-medium">Concession / Discount</td>
-                      <td className="py-2 text-right font-semibold text-rose-600">
-                        - ₹{selectedReceipt.discount.toLocaleString()}
-                      </td>
-                    </tr>
+                    <div className="flex items-center">
+                      <span className="w-40 text-slate-700 font-normal">Offer Applied / Discount</span>
+                      <span className="w-4 text-slate-500 text-center">:</span>
+                      <span className="font-semibold text-rose-600 pl-1">
+                        ₹ {selectedReceipt.discount.toLocaleString('en-IN')}
+                      </span>
+                    </div>
                   ) : null}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-slate-300 font-black text-sm">
-                    <td className="py-3 text-navy-900">Net Amount Paid</td>
-                    <td className="py-3 text-right text-emerald-700">
-                      ₹{(selectedReceipt.paid_amount ?? selectedReceipt.amount).toLocaleString()}
-                    </td>
-                  </tr>
                   {selectedReceipt.balance_amount && selectedReceipt.balance_amount > 0 ? (
-                    <tr className="border-t border-slate-200 text-xs font-bold text-rose-600">
-                      <td className="py-2">Balance Due</td>
-                      <td className="py-2 text-right">
-                        ₹{selectedReceipt.balance_amount.toLocaleString()}
-                      </td>
-                    </tr>
+                    <div className="flex items-center">
+                      <span className="w-40 text-slate-700 font-normal">Balance Amount Payable</span>
+                      <span className="w-4 text-slate-500 text-center">:</span>
+                      <span className="font-semibold text-rose-600 pl-1">
+                        ₹ {selectedReceipt.balance_amount.toLocaleString('en-IN')}
+                      </span>
+                    </div>
                   ) : null}
-                </tfoot>
-              </table>
-
-              {/* Signatures */}
-              <div className="flex justify-between items-end pt-6 border-t border-slate-200 text-xs text-slate-500">
-                <div>
-                  <span className="block font-medium">Authorized Signatory</span>
-                  <span className="text-[10px] text-slate-400">Zella Hostel Administration</span>
+                  <div className="flex items-center">
+                    <span className="w-40 text-slate-700 font-normal">Payment Status</span>
+                    <span className="w-4 text-slate-500 text-center">:</span>
+                    <span className="font-bold text-emerald-700 uppercase pl-1 tracking-wide">
+                      {selectedReceipt.balance_amount && selectedReceipt.balance_amount > 0
+                        ? 'PARTIALLY PAID'
+                        : 'PAID / SETTLED'}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-slate-400 block">Computer Generated Receipt</span>
-                  <span className="text-[10px] text-slate-400">Status: Verified & Settled</span>
+
+                {/* 6. RECEIPT NOTE */}
+                <div className="mb-8">
+                  <div className="text-xs font-bold text-slate-900 mb-1">
+                    Receipt Note:
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed max-w-xl">
+                    {selectedReceipt.remarks ||
+                      'This document acknowledges receipt of the amount stated above for the hostel accommodation fee. Please retain this receipt for your records.'}
+                  </p>
+                </div>
+
+                {/* 7. BOTTOM SECTION: SEAL (BOTTOM-LEFT) & SIGNATORY (BOTTOM-RIGHT) ON EXACT SAME HORIZONTAL BASELINE */}
+                <div className="flex items-end justify-between pt-4 mt-6">
+                  {/* Bottom-Left: Circular Blue Stamp */}
+                  <div className="flex flex-col items-start select-none">
+                    <ZellaHostelSeal className="w-24 h-24" />
+                  </div>
+
+                  {/* Bottom-Right: Authorized Signatory */}
+                  <div className="text-right">
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                      AUTHORIZED SIGNATORY
+                    </div>
+                    <div className="text-xs font-semibold text-slate-700 mt-1">
+                      Zella Ladies Hostel Administration
+                    </div>
+                    <div className="text-[10px] text-slate-400 italic mt-0.5">
+                      Computer-generated receipt
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Modal Actions */}
-            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3">
+            {/* Bottom Modal Actions */}
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-2">
               <Button
                 variant="outline"
                 icon={<Printer className="w-4 h-4" />}
