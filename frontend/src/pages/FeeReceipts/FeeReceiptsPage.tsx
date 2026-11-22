@@ -14,6 +14,10 @@ import { ZellaHostelSeal } from '../../components/ZellaHostelSeal';
 import { WhatsAppIcon } from '../../components/WhatsAppIcon';
 import zellaLogo from '../../assets/zella_logo.png';
 import {
+  normalizePhoneNumber,
+  buildWhatsAppChatUrl,
+} from '../../utils/whatsapp';
+import {
   calculateBillingPeriod,
   getCycleForDate,
   formatDateDDMMYYYY,
@@ -278,6 +282,54 @@ export const FeeReceiptsPage: React.FC = () => {
       return;
     }
 
+    // 1. Identify recipient guest strictly from currently selected receipt relationship
+    let targetGuest = selectedReceipt.guest;
+    if (!targetGuest || !targetGuest.contact_no) {
+      targetGuest =
+        guests.find((g) => Number(g.id) === Number(selectedReceipt.guest_id)) || targetGuest;
+    }
+
+    if (!targetGuest?.contact_no && selectedReceipt.guest_id) {
+      try {
+        const fetchedGuest = await guestService.getGuest(selectedReceipt.guest_id);
+        if (fetchedGuest) {
+          targetGuest = fetchedGuest;
+        }
+      } catch (fetchErr) {
+        console.warn('Could not retrieve guest details:', fetchErr);
+      }
+    }
+
+    const rawPhone = targetGuest?.contact_no || selectedReceipt.guest?.contact_no;
+    const phoneResult = normalizePhoneNumber(rawPhone);
+
+    // If the number is invalid or missing, show an error and do not open WhatsApp
+    if (!phoneResult.valid) {
+      toastError(
+        phoneResult.error ||
+          "Guest mobile number is missing or invalid. Please update the guest's contact details before sharing the receipt.",
+        "Missing Contact"
+      );
+      return;
+    }
+
+    // 2. Direct WhatsApp URL to customer: https://wa.me/91XXXXXXXXXX (strictly NO text, NO caption)
+    const waUrl = buildWhatsAppChatUrl(phoneResult.normalized);
+
+    // 3. Immediately open WhatsApp directly to that guest's registered mobile number
+    // Open synchronously in user click gesture to prevent browser popup blockers
+    const waWindow = window.open(waUrl, '_blank', 'noopener,noreferrer');
+    if (!waWindow || waWindow.closed || typeof waWindow.closed === 'undefined') {
+      const link = document.createElement('a');
+      link.href = waUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // 4. Generate the actual PDF of the selected receipt and automatically download to device
     setIsSharingWhatsapp(true);
     try {
       const html2pdfModule = await import('html2pdf.js');
@@ -300,64 +352,16 @@ export const FeeReceiptsPage: React.FC = () => {
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       };
 
-      // 1. Generate real PDF Blob and valid File object with MIME type application/pdf
-      const pdfWorker = html2pdf().from(receiptPrintRef.current).set(opt);
-      const pdfBlob: Blob = await pdfWorker.output('blob');
-      const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
+      // Automatically download the generated PDF to the device
+      await html2pdf().from(receiptPrintRef.current).set(opt).save();
 
-      // 2. Check Web Share API Level 2 file sharing capability (supported mobile devices/browsers)
-      let canShareFiles = false;
-      if (
-        typeof navigator !== 'undefined' &&
-        typeof navigator.share === 'function' &&
-        typeof navigator.canShare === 'function'
-      ) {
-        try {
-          canShareFiles = navigator.canShare({ files: [pdfFile] });
-        } catch {
-          canShareFiles = false;
-        }
-      }
-
-      // 3. Native device share sheet: SHARE ONLY THE PDF FILE (no text, no caption, no greeting, no prefilled message)
-      if (canShareFiles) {
-        try {
-          await navigator.share({
-            files: [pdfFile],
-          });
-          success('Receipt PDF ready to share!', 'Share Sheet Opened');
-          return;
-        } catch (shareErr: any) {
-          // Gracefully handle user cancellation/dismissal without errors
-          if (shareErr.name === 'AbortError') {
-            return;
-          }
-          console.warn('Native PDF file share failed, falling back to download:', shareErr);
-        }
-      }
-
-      // 4. Unsupported browser fallback (e.g. desktop browsers):
-      // Download the PDF file and display: "PDF downloaded. Please attach the PDF manually in WhatsApp."
-      // Do NOT use wa.me?text=..., do NOT open a prefilled text-message chat.
-      try {
-        const blobUrl = URL.createObjectURL(pdfBlob);
-        const downloadLink = document.createElement('a');
-        downloadLink.href = blobUrl;
-        downloadLink.download = filename;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-      } catch (dlErr) {
-        console.warn('PDF download link warning:', dlErr);
-      }
-
+      // 5. Clear user instruction
       success(
-        'PDF downloaded. Please attach the PDF manually in WhatsApp.',
-        'PDF Ready'
+        `Receipt PDF downloaded. WhatsApp opened directly for ${targetGuest?.name || 'guest'} (${phoneResult.normalized}). Please attach the downloaded PDF and send.`,
+        'WhatsApp Opened'
       );
-    } catch (err) {
-      console.error('Error preparing receipt PDF for sharing:', err);
+    } catch (err: any) {
+      console.error('PDF download warning during WhatsApp share:', err);
       toastError('Failed to generate receipt PDF. Please try again.');
     } finally {
       setIsSharingWhatsapp(false);

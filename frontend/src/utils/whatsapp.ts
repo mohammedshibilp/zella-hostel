@@ -196,9 +196,12 @@ Contact: +91 920 7000 923
 };
 
 /**
- * Constructs the official WhatsApp click-to-chat URL:
- * https://wa.me/COUNTRYCODEANDNUMBER?text=ENCODED_MESSAGE
+ * Constructs the official direct WhatsApp customer chat URL:
+ * https://wa.me/COUNTRYCODEANDNUMBER
  */
-export const buildWhatsAppChatUrl = (normalizedPhone: string, message: string): string => {
-  return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
+export const buildWhatsAppChatUrl = (normalizedPhone: string, message?: string): string => {
+  if (message && message.trim()) {
+    return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
+  }
+  return `https://wa.me/${normalizedPhone}`;
 };
