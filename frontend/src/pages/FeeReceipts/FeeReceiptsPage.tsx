@@ -565,44 +565,6 @@ export const FeeReceiptsPage: React.FC = () => {
       >
         {selectedReceipt && (
           <div className="flex flex-col gap-5">
-            {/* Action Bar */}
-            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-              <span className="text-xs text-slate-500 font-medium">
-                Official Institutional Fee Receipt – Ready for A4 Print & PDF Download
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="outline"
-                  icon={<Printer className="w-4 h-4" />}
-                  onClick={handlePrint}
-                  disabled={isSharingWhatsapp || isExportingPdf}
-                  className="w-full sm:w-auto"
-                >
-                  Print Receipt
-                </Button>
-                <Button
-                  variant="primary"
-                  icon={<Download className="w-4 h-4" />}
-                  onClick={handleDownloadPdf}
-                  isLoading={isExportingPdf}
-                  disabled={isSharingWhatsapp || isExportingPdf}
-                  className="w-full sm:w-auto"
-                >
-                  Download PDF
-                </Button>
-                <Button
-                  variant="whatsapp"
-                  icon={<WhatsAppIcon className="w-4 h-4" />}
-                  onClick={handleShareWhatsApp}
-                  isLoading={isSharingWhatsapp}
-                  disabled={isSharingWhatsapp || isExportingPdf}
-                  className="w-full sm:w-auto"
-                >
-                  Share on WhatsApp
-                </Button>
-              </div>
-            </div>
-
             {/* Scrollable Container for Mobile Responsiveness */}
             <div className="w-full overflow-x-auto bg-slate-100/70 p-2 sm:p-6 rounded-xl border border-slate-200/80 flex justify-center">
               {/* Printable Receipt Canvas Matching Reference PDF Exactly */}
