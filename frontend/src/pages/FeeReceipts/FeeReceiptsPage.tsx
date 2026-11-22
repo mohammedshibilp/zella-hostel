@@ -11,7 +11,13 @@ import { Select } from '../../components/Select';
 import { Card } from '../../components/Card';
 import { useToast } from '../../context/ToastContext';
 import { ZellaHostelSeal } from '../../components/ZellaHostelSeal';
+import { WhatsAppIcon } from '../../components/WhatsAppIcon';
 import zellaLogo from '../../assets/zella_logo.png';
+import {
+  normalizePhoneNumber,
+  generateWhatsAppReceiptMessage,
+  buildWhatsAppChatUrl,
+} from '../../utils/whatsapp';
 import {
   Plus,
   Receipt,
@@ -31,6 +37,7 @@ export const FeeReceiptsPage: React.FC = () => {
   const [selectedReceipt, setSelectedReceipt] = useState<FeeReceipt | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
+  const [isSharingWhatsapp, setIsSharingWhatsapp] = useState<boolean>(false);
 
   const receiptPrintRef = useRef<HTMLDivElement>(null);
 
@@ -195,6 +202,114 @@ export const FeeReceiptsPage: React.FC = () => {
       toastError('Failed to generate PDF');
     } finally {
       setIsExportingPdf(false);
+    }
+  };
+
+  const handleShareWhatsApp = async () => {
+    if (!selectedReceipt) return;
+
+    // 1. Identify guest mobile number from receipt or loaded guests
+    const targetGuest =
+      selectedReceipt.guest ||
+      guests.find((g) => g.id === selectedReceipt.guest_id);
+
+    const rawPhone = targetGuest?.contact_no;
+    const phoneResult = normalizePhoneNumber(rawPhone);
+
+    if (!phoneResult.valid) {
+      toastError(
+        phoneResult.error ||
+          "Guest mobile number is missing or invalid. Please update the guest's contact details before sharing the receipt.",
+        "Missing Contact"
+      );
+      return;
+    }
+
+    // 2. Generate WhatsApp message & click-to-chat URL
+    const message = generateWhatsAppReceiptMessage(selectedReceipt, targetGuest);
+    const waUrl = buildWhatsAppChatUrl(phoneResult.normalized, message);
+
+    setIsSharingWhatsapp(true);
+
+    try {
+      const html2pdfModule = await import('html2pdf.js');
+      const html2pdf = html2pdfModule.default || html2pdfModule;
+      const cleanReceiptNo = selectedReceipt.receipt_no.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `Zella_Receipt_${cleanReceiptNo}.pdf`;
+
+      const opt = {
+        margin: [10, 12, 10, 12],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          scrollY: 0,
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      };
+
+      let fileShared = false;
+
+      // 3. Web Share API Level 2 (files sharing support on mobile devices)
+      if (typeof navigator !== 'undefined' && navigator.canShare && receiptPrintRef.current) {
+        try {
+          const pdfWorker = html2pdf().from(receiptPrintRef.current).set(opt);
+          const pdfBlob = await pdfWorker.output('blob');
+          const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+          if (navigator.canShare({ files: [pdfFile] })) {
+            await navigator.share({
+              files: [pdfFile],
+              title: `Zella Fee Receipt - ${selectedReceipt.receipt_no}`,
+              text: message,
+            });
+            fileShared = true;
+            success(
+              `Receipt shared with ${targetGuest?.name || 'guest'}!`,
+              'WhatsApp Share Opened'
+            );
+          }
+        } catch (shareErr: any) {
+          if (shareErr.name === 'AbortError') {
+            // User cancelled or dismissed native share dialog
+            return;
+          }
+          console.warn('Native share failed or unhandled, falling back to direct WhatsApp link:', shareErr);
+        }
+      }
+
+      // 4. Desktop browsers / WhatsApp Web / unsupported Web Share API fallback:
+      // Download the PDF and open WhatsApp Web/App directly to the guest's number
+      if (!fileShared) {
+        if (receiptPrintRef.current) {
+          await html2pdf().from(receiptPrintRef.current).set(opt).save();
+        }
+
+        const newTab = window.open(waUrl, '_blank', 'noopener,noreferrer');
+        if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+          const link = document.createElement('a');
+          link.href = waUrl;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+
+        success(
+          'Receipt PDF downloaded. WhatsApp opened for the guest. Please attach the downloaded PDF and send the message.',
+          'WhatsApp Ready'
+        );
+      }
+    } catch (err) {
+      console.error('Error during WhatsApp receipt sharing:', err);
+      toastError('Failed to prepare receipt for WhatsApp sharing. Please try again.');
+    } finally {
+      setIsSharingWhatsapp(false);
     }
   };
 
@@ -455,11 +570,12 @@ export const FeeReceiptsPage: React.FC = () => {
               <span className="text-xs text-slate-500 font-medium">
                 Official Institutional Fee Receipt – Ready for A4 Print & PDF Download
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
                   icon={<Printer className="w-4 h-4" />}
                   onClick={handlePrint}
+                  disabled={isSharingWhatsapp || isExportingPdf}
                   className="w-full sm:w-auto"
                 >
                   Print Receipt
@@ -469,9 +585,20 @@ export const FeeReceiptsPage: React.FC = () => {
                   icon={<Download className="w-4 h-4" />}
                   onClick={handleDownloadPdf}
                   isLoading={isExportingPdf}
+                  disabled={isSharingWhatsapp || isExportingPdf}
                   className="w-full sm:w-auto"
                 >
                   Download PDF
+                </Button>
+                <Button
+                  variant="whatsapp"
+                  icon={<WhatsAppIcon className="w-4 h-4" />}
+                  onClick={handleShareWhatsApp}
+                  isLoading={isSharingWhatsapp}
+                  disabled={isSharingWhatsapp || isExportingPdf}
+                  className="w-full sm:w-auto"
+                >
+                  Share on WhatsApp
                 </Button>
               </div>
             </div>
@@ -704,11 +831,12 @@ export const FeeReceiptsPage: React.FC = () => {
             </div>
 
             {/* Bottom Modal Actions */}
-            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row flex-wrap items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-2">
               <Button
                 variant="outline"
                 icon={<Printer className="w-4 h-4" />}
                 onClick={handlePrint}
+                disabled={isSharingWhatsapp || isExportingPdf}
                 className="w-full sm:w-auto"
               >
                 Print Receipt
@@ -718,9 +846,20 @@ export const FeeReceiptsPage: React.FC = () => {
                 icon={<Download className="w-4 h-4" />}
                 onClick={handleDownloadPdf}
                 isLoading={isExportingPdf}
+                disabled={isSharingWhatsapp || isExportingPdf}
                 className="w-full sm:w-auto"
               >
                 Download PDF
+              </Button>
+              <Button
+                variant="whatsapp"
+                icon={<WhatsAppIcon className="w-4 h-4" />}
+                onClick={handleShareWhatsApp}
+                isLoading={isSharingWhatsapp}
+                disabled={isSharingWhatsapp || isExportingPdf}
+                className="w-full sm:w-auto"
+              >
+                Share on WhatsApp
               </Button>
             </div>
           </div>
