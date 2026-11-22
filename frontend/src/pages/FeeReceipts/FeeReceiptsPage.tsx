@@ -303,7 +303,7 @@ export const FeeReceiptsPage: React.FC = () => {
     const rawPhone = targetGuest?.contact_no || selectedReceipt.guest?.contact_no;
     const phoneResult = normalizePhoneNumber(rawPhone);
 
-    // If the number is invalid or missing, show an error and do not open WhatsApp
+    // If the number is invalid or missing, show an error and do not proceed
     if (!phoneResult.valid) {
       toastError(
         phoneResult.error ||
@@ -313,23 +313,19 @@ export const FeeReceiptsPage: React.FC = () => {
       return;
     }
 
-    // 2. Direct WhatsApp URL to customer: https://wa.me/91XXXXXXXXXX (strictly NO text, NO caption)
-    const waUrl = buildWhatsAppChatUrl(phoneResult.normalized);
+    // Platform detection (Android, iPhone Safari, Windows, PWA standalone)
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+    const isAndroid = /Android/i.test(ua);
+    const isIOS =
+      /iPhone|iPad|iPod/i.test(ua) ||
+      (typeof navigator !== 'undefined' && navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isWindows =
+      /Win/i.test(ua) || (typeof navigator !== 'undefined' && /Win/i.test(navigator.platform || ''));
+    const isPWA =
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true);
 
-    // 3. Immediately open WhatsApp directly to that guest's registered mobile number
-    // Open synchronously in user click gesture to prevent browser popup blockers
-    const waWindow = window.open(waUrl, '_blank', 'noopener,noreferrer');
-    if (!waWindow || waWindow.closed || typeof waWindow.closed === 'undefined') {
-      const link = document.createElement('a');
-      link.href = waUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    // 4. Generate the actual PDF of the selected receipt and automatically download to device
     setIsSharingWhatsapp(true);
     try {
       const html2pdfModule = await import('html2pdf.js');
@@ -352,17 +348,114 @@ export const FeeReceiptsPage: React.FC = () => {
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       };
 
-      // Automatically download the generated PDF to the device
-      await html2pdf().from(receiptPrintRef.current).set(opt).save();
+      // 1. Generate and validate the actual receipt PDF Blob
+      const pdfWorker = html2pdf().from(receiptPrintRef.current).set(opt);
+      const pdfBlob: Blob = await pdfWorker.output('blob');
 
-      // 5. Clear user instruction
+      if (!pdfBlob || pdfBlob.size < 500) {
+        throw new Error('Generated PDF document is empty or invalid.');
+      }
+
+      const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+      // 2. Android & iPhone Safari: Native Web Share API Level 2 file sharing
+      let canShareFiles = false;
+      if (
+        typeof navigator !== 'undefined' &&
+        typeof navigator.share === 'function' &&
+        typeof navigator.canShare === 'function'
+      ) {
+        try {
+          canShareFiles = navigator.canShare({ files: [pdfFile] });
+        } catch {
+          canShareFiles = false;
+        }
+      }
+
+      if (canShareFiles && (isAndroid || isIOS)) {
+        try {
+          // Strictly document only: NO text, NO captions
+          await navigator.share({
+            files: [pdfFile],
+          });
+          success(
+            isAndroid
+              ? 'Receipt PDF shared! Select WhatsApp and the customer to send document.'
+              : 'Receipt PDF shared! Choose WhatsApp in the share sheet to send.',
+            'Share Sheet Opened'
+          );
+          return;
+        } catch (shareErr: any) {
+          // Gracefully handle user cancellation/dismissal
+          if (shareErr.name === 'AbortError') {
+            return;
+          }
+          console.warn('Native mobile share failed, falling back to direct chat flow:', shareErr);
+        }
+      }
+
+      // 3. Windows WhatsApp Desktop Companion Check
+      const companion = (window as any).zellaCompanion || (window as any).electronBridge;
+      if (companion && typeof companion.sendWhatsAppDocument === 'function') {
+        try {
+          await companion.sendWhatsAppDocument({
+            phone: phoneResult.normalized,
+            filename: filename,
+            fileBlob: pdfBlob,
+          });
+          success(
+            `Receipt PDF attached for ${targetGuest?.name || 'guest'} via WhatsApp Desktop companion.`,
+            'WhatsApp Desktop'
+          );
+          return;
+        } catch (compErr) {
+          console.warn('Companion app error, falling back to direct chat:', compErr);
+        }
+      }
+
+      // 4. Windows WhatsApp Desktop & WhatsApp Web (Chrome / Edge / Firefox)
+      // Automatically download the generated PDF to the device
+      try {
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = blobUrl;
+        downloadLink.download = filename;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      } catch (dlErr) {
+        console.warn('PDF download link warning:', dlErr);
+      }
+
+      // 5. Open direct WhatsApp chat to the exact guest's mobile number: https://wa.me/91XXXXXXXXXX
+      // Strictly NO text, NO caption, NO prefilled message
+      const waUrl = buildWhatsAppChatUrl(phoneResult.normalized);
+      const waWindow = window.open(waUrl, '_blank', 'noopener,noreferrer');
+      if (!waWindow || waWindow.closed || typeof waWindow.closed === 'undefined') {
+        const link = document.createElement('a');
+        link.href = waUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // 6. Truthful, platform-aware user guidance
+      const platformLabel = isWindows
+        ? isPWA
+          ? 'WhatsApp (PWA)'
+          : 'WhatsApp Desktop / Web'
+        : 'WhatsApp Web';
+
       success(
-        `Receipt PDF downloaded. WhatsApp opened directly for ${targetGuest?.name || 'guest'} (${phoneResult.normalized}). Please attach the downloaded PDF and send.`,
+        `Receipt PDF downloaded (${filename}). ${platformLabel} opened directly for ${targetGuest?.name || 'guest'} (${phoneResult.normalized}). Please attach the downloaded PDF and send.`,
         'WhatsApp Opened'
       );
     } catch (err: any) {
-      console.error('PDF download warning during WhatsApp share:', err);
-      toastError('Failed to generate receipt PDF. Please try again.');
+      console.error('Error during WhatsApp receipt sharing:', err);
+      toastError('Failed to prepare receipt PDF for sharing. Please try again.');
     } finally {
       setIsSharingWhatsapp(false);
     }
