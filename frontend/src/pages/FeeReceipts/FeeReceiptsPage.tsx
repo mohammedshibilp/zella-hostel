@@ -327,57 +327,109 @@ export const FeeReceiptsPage: React.FC = () => {
       });
     }
 
-    // 5. Direct WhatsApp Chat Opening (synchronously in user click gesture to prevent browser popup blockers)
-    // Do NOT use Web Share API as it opens generic OS share sheet / contact picker instead of direct chat
-    const waWindow = window.open(waUrl, '_blank', 'noopener,noreferrer');
-    if (!waWindow || waWindow.closed || typeof waWindow.closed === 'undefined') {
-      const link = document.createElement('a');
-      link.href = waUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    // 5. PDF generation & download
+    if (!receiptPrintRef.current) {
+      toastError('Receipt preview is not ready. Please try again.');
+      return;
     }
 
-    // 6. Section 6: Background PDF handling
-    // Download the PDF voucher so the admin can manually attach it if desired
-    if (receiptPrintRef.current) {
-      setIsSharingWhatsapp(true);
+    setIsSharingWhatsapp(true);
+    try {
+      const html2pdfModule = await import('html2pdf.js');
+      const html2pdf = html2pdfModule.default || html2pdfModule;
+      const cleanReceiptNo = selectedReceipt.receipt_no.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `Zella_Receipt_${cleanReceiptNo}.pdf`;
+
+      const opt = {
+        margin: [10, 12, 10, 12],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          scrollY: 0,
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      };
+
+      // Generate real PDF Blob and File object
+      const pdfWorker = html2pdf().from(receiptPrintRef.current).set(opt);
+      const pdfBlob: Blob = await pdfWorker.output('blob');
+      const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+      // Always download the generated PDF to the device with meaningful filename
       try {
-        const html2pdfModule = await import('html2pdf.js');
-        const html2pdf = html2pdfModule.default || html2pdfModule;
-        const cleanReceiptNo = selectedReceipt.receipt_no.replace(/[^a-zA-Z0-9_-]/g, '_');
-        const filename = `Zella_Receipt_${cleanReceiptNo}.pdf`;
-
-        const opt = {
-          margin: [10, 12, 10, 12],
-          filename: filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            letterRendering: true,
-            logging: false,
-            backgroundColor: '#ffffff',
-            scrollY: 0,
-          },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        };
-
-        await html2pdf().from(receiptPrintRef.current).set(opt).save();
-      } catch (pdfErr) {
-        console.warn('PDF download warning during WhatsApp share:', pdfErr);
-      } finally {
-        setIsSharingWhatsapp(false);
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = blobUrl;
+        downloadLink.download = filename;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      } catch (dlErr) {
+        console.warn('PDF download link warning:', dlErr);
       }
-    }
 
-    // 7. Clear user guidance
-    success(
-      `WhatsApp chat opened for ${targetGuest?.name || 'guest'} (${phoneResult.normalized}). Receipt PDF downloaded — please attach the downloaded PDF in WhatsApp and send the message.`,
-      'WhatsApp Chat Opened'
-    );
+      // 6. Check Web Share API Level 2 file sharing capability (supported mobile devices/browsers)
+      let canShareFiles = false;
+      if (
+        typeof navigator !== 'undefined' &&
+        typeof navigator.share === 'function' &&
+        typeof navigator.canShare === 'function'
+      ) {
+        try {
+          canShareFiles = navigator.canShare({ files: [pdfFile] });
+        } catch {
+          canShareFiles = false;
+        }
+      }
+
+      if (canShareFiles) {
+        try {
+          await navigator.share({
+            files: [pdfFile],
+            title: `Zella Fee Receipt - ${selectedReceipt.receipt_no}`,
+            text: message,
+          });
+          success('Receipt PDF shared successfully!', 'Receipt Shared');
+          return;
+        } catch (shareErr: any) {
+          // Gracefully handle user cancellation/dismissal
+          if (shareErr.name === 'AbortError') {
+            return;
+          }
+          console.warn('Native share failed, falling back to direct WhatsApp chat:', shareErr);
+        }
+      }
+
+      // 7. Fallback when native file sharing is unsupported (e.g. desktop browsers):
+      // Open direct WhatsApp chat for the receipt's guest using wa.me integration
+      const waWindow = window.open(waUrl, '_blank', 'noopener,noreferrer');
+      if (!waWindow || waWindow.closed || typeof waWindow.closed === 'undefined') {
+        const link = document.createElement('a');
+        link.href = waUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // Show clear instruction to attach the downloaded PDF in this WhatsApp chat
+      success(
+        'Receipt PDF downloaded. Please attach the downloaded PDF in this WhatsApp chat.',
+        'WhatsApp Ready'
+      );
+    } catch (err) {
+      console.error('Error during WhatsApp receipt sharing:', err);
+      toastError('Failed to prepare receipt for WhatsApp sharing. Please try again.');
+    } finally {
+      setIsSharingWhatsapp(false);
+    }
   };
 
   const columns: Column<FeeReceipt>[] = [
