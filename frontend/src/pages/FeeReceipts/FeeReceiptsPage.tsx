@@ -84,6 +84,26 @@ export const FeeReceiptsPage: React.FC = () => {
     loadData();
   }, []);
 
+  // Ensure selectedReceipt has complete guest details if lazy-loaded
+  useEffect(() => {
+    if (
+      selectedReceipt &&
+      (!selectedReceipt.guest || !selectedReceipt.guest.contact_no) &&
+      selectedReceipt.guest_id
+    ) {
+      guestService
+        .getGuest(selectedReceipt.guest_id)
+        .then((fullGuest) => {
+          if (fullGuest && fullGuest.contact_no) {
+            setSelectedReceipt((prev) =>
+              prev && prev.id === selectedReceipt.id ? { ...prev, guest: fullGuest } : prev
+            );
+          }
+        })
+        .catch(() => {});
+    }
+  }, [selectedReceipt?.id]);
+
   const handleResidentChange = (guestId: string) => {
     const selectedGuest = guests.find((g) => g.id.toString() === guestId);
     let amountVal = '';
@@ -202,7 +222,7 @@ export const FeeReceiptsPage: React.FC = () => {
   };
 
   const formatRoomBed = (receipt: FeeReceipt): string => {
-    const room = receipt.room_number || receipt.guest?.room_number || '101';
+    const room = receipt.room_number || receipt.guest?.room_number || 'N/A';
     const bed = receipt.guest?.bed_number || 'Not Assigned';
     return `Room ${room} · Bed ${bed}`;
   };
@@ -258,12 +278,25 @@ export const FeeReceiptsPage: React.FC = () => {
   const handleShareWhatsApp = async () => {
     if (!selectedReceipt) return;
 
-    // 1. Identify guest mobile number from receipt or loaded guests
-    const targetGuest =
-      selectedReceipt.guest ||
-      guests.find((g) => g.id === selectedReceipt.guest_id);
+    // 1. Identify recipient guest strictly from currently selected receipt relationship
+    let targetGuest = selectedReceipt.guest;
+    if (!targetGuest || !targetGuest.contact_no) {
+      targetGuest =
+        guests.find((g) => Number(g.id) === Number(selectedReceipt.guest_id)) || targetGuest;
+    }
 
-    const rawPhone = targetGuest?.contact_no;
+    if (!targetGuest?.contact_no && selectedReceipt.guest_id) {
+      try {
+        const fetchedGuest = await guestService.getGuest(selectedReceipt.guest_id);
+        if (fetchedGuest) {
+          targetGuest = fetchedGuest;
+        }
+      } catch (fetchErr) {
+        console.warn('Could not retrieve guest details:', fetchErr);
+      }
+    }
+
+    const rawPhone = targetGuest?.contact_no || selectedReceipt.guest?.contact_no;
     const phoneResult = normalizePhoneNumber(rawPhone);
 
     if (!phoneResult.valid) {
@@ -275,92 +308,76 @@ export const FeeReceiptsPage: React.FC = () => {
       return;
     }
 
-    // 2. Generate WhatsApp message & click-to-chat URL
+    // 2. Generate WhatsApp message from current receipt data
     const message = generateWhatsAppReceiptMessage(selectedReceipt, targetGuest);
+
+    // 3. Construct direct click-to-chat URL: https://wa.me/COUNTRYCODEANDNUMBER?text=ENCODED_MESSAGE
     const waUrl = buildWhatsAppChatUrl(phoneResult.normalized, message);
 
-    setIsSharingWhatsapp(true);
-
-    try {
-      const html2pdfModule = await import('html2pdf.js');
-      const html2pdf = html2pdfModule.default || html2pdfModule;
-      const cleanReceiptNo = selectedReceipt.receipt_no.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const filename = `Zella_Receipt_${cleanReceiptNo}.pdf`;
-
-      const opt = {
-        margin: [10, 12, 10, 12],
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          letterRendering: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          scrollY: 0,
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      };
-
-      let fileShared = false;
-
-      // 3. Web Share API Level 2 (files sharing support on mobile devices)
-      if (typeof navigator !== 'undefined' && navigator.canShare && receiptPrintRef.current) {
-        try {
-          const pdfWorker = html2pdf().from(receiptPrintRef.current).set(opt);
-          const pdfBlob = await pdfWorker.output('blob');
-          const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
-
-          if (navigator.canShare({ files: [pdfFile] })) {
-            await navigator.share({
-              files: [pdfFile],
-              title: `Zella Fee Receipt - ${selectedReceipt.receipt_no}`,
-              text: message,
-            });
-            fileShared = true;
-            success(
-              `Receipt shared with ${targetGuest?.name || 'guest'}!`,
-              'WhatsApp Share Opened'
-            );
-          }
-        } catch (shareErr: any) {
-          if (shareErr.name === 'AbortError') {
-            // User cancelled or dismissed native share dialog
-            return;
-          }
-          console.warn('Native share failed or unhandled, falling back to direct WhatsApp link:', shareErr);
-        }
-      }
-
-      // 4. Desktop browsers / WhatsApp Web / unsupported Web Share API fallback:
-      // Download the PDF and open WhatsApp Web/App directly to the guest's number
-      if (!fileShared) {
-        if (receiptPrintRef.current) {
-          await html2pdf().from(receiptPrintRef.current).set(opt).save();
-        }
-
-        const newTab = window.open(waUrl, '_blank', 'noopener,noreferrer');
-        if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
-          const link = document.createElement('a');
-          link.href = waUrl;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
-
-        success(
-          'Receipt PDF downloaded. WhatsApp opened for the guest. Please attach the downloaded PDF and send the message.',
-          'WhatsApp Ready'
-        );
-      }
-    } catch (err) {
-      console.error('Error during WhatsApp receipt sharing:', err);
-      toastError('Failed to prepare receipt for WhatsApp sharing. Please try again.');
-    } finally {
-      setIsSharingWhatsapp(false);
+    // 4. Section 7 Debugging Requirement (development mode only)
+    if (import.meta.env.DEV) {
+      console.log('[WhatsApp Share Debug]', {
+        selectedReceiptId: selectedReceipt.id,
+        receiptNo: selectedReceipt.receipt_no,
+        associatedGuestId: targetGuest?.id ?? selectedReceipt.guest_id,
+        guestName: targetGuest?.name ?? selectedReceipt.guest?.name,
+        rawGuestMobile: rawPhone,
+        normalizedWhatsAppNumber: phoneResult.normalized,
+        finalWhatsAppUrl: waUrl,
+      });
     }
+
+    // 5. Direct WhatsApp Chat Opening (synchronously in user click gesture to prevent browser popup blockers)
+    // Do NOT use Web Share API as it opens generic OS share sheet / contact picker instead of direct chat
+    const waWindow = window.open(waUrl, '_blank', 'noopener,noreferrer');
+    if (!waWindow || waWindow.closed || typeof waWindow.closed === 'undefined') {
+      const link = document.createElement('a');
+      link.href = waUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // 6. Section 6: Background PDF handling
+    // Download the PDF voucher so the admin can manually attach it if desired
+    if (receiptPrintRef.current) {
+      setIsSharingWhatsapp(true);
+      try {
+        const html2pdfModule = await import('html2pdf.js');
+        const html2pdf = html2pdfModule.default || html2pdfModule;
+        const cleanReceiptNo = selectedReceipt.receipt_no.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const filename = `Zella_Receipt_${cleanReceiptNo}.pdf`;
+
+        const opt = {
+          margin: [10, 12, 10, 12],
+          filename: filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            letterRendering: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            scrollY: 0,
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        };
+
+        await html2pdf().from(receiptPrintRef.current).set(opt).save();
+      } catch (pdfErr) {
+        console.warn('PDF download warning during WhatsApp share:', pdfErr);
+      } finally {
+        setIsSharingWhatsapp(false);
+      }
+    }
+
+    // 7. Clear user guidance
+    success(
+      `WhatsApp chat opened for ${targetGuest?.name || 'guest'} (${phoneResult.normalized}). Receipt PDF downloaded — please attach the downloaded PDF in WhatsApp and send the message.`,
+      'WhatsApp Chat Opened'
+    );
   };
 
   const columns: Column<FeeReceipt>[] = [

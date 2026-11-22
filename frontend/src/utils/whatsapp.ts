@@ -26,19 +26,14 @@ export const normalizePhoneNumber = (rawPhone?: string | null): PhoneNormalizati
     return {
       valid: false,
       normalized: '',
-      error: "Guest mobile number is missing or invalid. Please update the guest's contact details before sharing the receipt.",
+      error: "Guest mobile number is missing. Please update the guest's contact details before sharing the receipt on WhatsApp.",
     };
   }
 
-  // Remove whitespace, dashes, parentheses, brackets, dots
-  let cleaned = rawPhone.trim().replace(/[\s\-\(\)\.\[\]]/g, '');
+  // Remove whitespace, dashes, parentheses, brackets, curly braces, dots, and plus signs
+  let cleaned = rawPhone.trim().replace(/[\s\-\(\)\[\]\{\}\.\+]/g, '');
 
-  // Strip leading '+'
-  if (cleaned.startsWith('+')) {
-    cleaned = cleaned.substring(1);
-  }
-
-  // Strip international dialing prefix '00'
+  // Strip international dialing prefix '00' if present
   if (cleaned.startsWith('00')) {
     cleaned = cleaned.substring(2);
   }
@@ -48,11 +43,17 @@ export const normalizePhoneNumber = (rawPhone?: string | null): PhoneNormalizati
     return {
       valid: false,
       normalized: '',
-      error: "Guest mobile number contains invalid characters. Please update the guest's contact details.",
+      error: `Mobile number "${rawPhone}" contains non-numeric characters. Please update the guest's contact details.`,
     };
   }
 
-  // Indian standard 10-digit mobile number (starts with 6, 7, 8, 9)
+  // Prevent accidental duplicated Indian country codes:
+  // e.g. +91 918590629268 or 91918590629268 -> strip first 91 if followed by valid 12-digit Indian number
+  if (cleaned.length === 14 && cleaned.startsWith('9191') && /^[6-9]\d{9}$/.test(cleaned.substring(4))) {
+    cleaned = cleaned.substring(2);
+  }
+
+  // Case 1: Indian 10-digit standard mobile number (starts with 6, 7, 8, 9)
   if (cleaned.length === 10) {
     if (/^[6-9]\d{9}$/.test(cleaned)) {
       return { valid: true, normalized: `91${cleaned}` };
@@ -60,11 +61,11 @@ export const normalizePhoneNumber = (rawPhone?: string | null): PhoneNormalizati
     return {
       valid: false,
       normalized: '',
-      error: "Invalid 10-digit mobile number. Indian mobile numbers must begin with 6, 7, 8, or 9.",
+      error: `Invalid 10-digit mobile number "${cleaned}". Indian mobile numbers must start with 6, 7, 8, or 9.`,
     };
   }
 
-  // Indian 11-digit number with leading 0 (e.g. 08590629268)
+  // Case 2: Indian 11-digit mobile number with leading 0 (e.g. 08590629268)
   if (cleaned.length === 11 && cleaned.startsWith('0')) {
     const withoutZero = cleaned.substring(1);
     if (/^[6-9]\d{9}$/.test(withoutZero)) {
@@ -72,7 +73,7 @@ export const normalizePhoneNumber = (rawPhone?: string | null): PhoneNormalizati
     }
   }
 
-  // Indian 12-digit number with 91 prefix (e.g. 918590629268)
+  // Case 3: Indian 12-digit number with 91 country code (e.g. 918590629268 or +918590629268)
   if (cleaned.length === 12 && cleaned.startsWith('91')) {
     const mobilePart = cleaned.substring(2);
     if (/^[6-9]\d{9}$/.test(mobilePart)) {
@@ -80,7 +81,15 @@ export const normalizePhoneNumber = (rawPhone?: string | null): PhoneNormalizati
     }
   }
 
-  // Explicit international number (E.164: 10 to 15 digits)
+  // Case 4: Indian 13-digit number with 91 and leading 0 (e.g. 9108590629268)
+  if (cleaned.length === 13 && cleaned.startsWith('910')) {
+    const mobilePart = cleaned.substring(3);
+    if (/^[6-9]\d{9}$/.test(mobilePart)) {
+      return { valid: true, normalized: `91${mobilePart}` };
+    }
+  }
+
+  // Case 5: International E.164 number (10 to 15 digits)
   if (cleaned.length >= 10 && cleaned.length <= 15) {
     return { valid: true, normalized: cleaned };
   }
@@ -88,7 +97,7 @@ export const normalizePhoneNumber = (rawPhone?: string | null): PhoneNormalizati
   return {
     valid: false,
     normalized: '',
-    error: "Guest mobile number is missing or invalid. Please update the guest's contact details before sharing the receipt.",
+    error: `Invalid mobile number length (${cleaned.length} digits). Please provide a valid 10-digit Indian mobile number or international number with country code.`,
   };
 };
 
@@ -109,7 +118,7 @@ export const formatDateDMY = (dateStr?: string | null): string => {
  */
 export const formatRoomBed = (receipt: FeeReceipt, fallbackGuest?: Guest | null): string => {
   const g = receipt.guest || fallbackGuest;
-  const room = receipt.room_number || g?.room_number || '101';
+  const room = receipt.room_number || g?.room_number || 'N/A';
   const bed = g?.bed_number || 'Not Assigned';
   return `Room ${room} · Bed ${bed}`;
 };
