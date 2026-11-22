@@ -155,6 +155,10 @@ export const RoomsPage: React.FC = () => {
       toastError('Capacity must be between 1 and 50 beds');
       return;
     }
+    if (!roomFormData.price || Number(roomFormData.price) <= 0) {
+      toastError('Monthly Room Rent (₹) is required and must be greater than 0', 'Validation Error');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -163,7 +167,7 @@ export const RoomsPage: React.FC = () => {
         floor: Number(roomFormData.floor),
         capacity: Number(roomFormData.capacity),
         room_type: roomFormData.room_type,
-        price: Number(roomFormData.price) || 0,
+        price: Number(roomFormData.price),
         status: roomFormData.status || 'Available',
         notes: roomFormData.notes?.trim() || undefined,
       });
@@ -205,6 +209,11 @@ export const RoomsPage: React.FC = () => {
     e.preventDefault();
     if (!selectedRoom) return;
 
+    if (editFormData.price !== undefined && Number(editFormData.price) <= 0) {
+      toastError('Monthly Room Rent (₹) must be greater than 0', 'Validation Error');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await roomService.updateRoom(selectedRoom.id, {
@@ -212,7 +221,7 @@ export const RoomsPage: React.FC = () => {
         floor: Number(editFormData.floor),
         capacity: Number(editFormData.capacity),
         room_type: editFormData.room_type,
-        price: Number(editFormData.price) || 0,
+        price: editFormData.price !== undefined ? Number(editFormData.price) : undefined,
         status: editFormData.status,
         notes: editFormData.notes?.trim() || undefined,
       });
@@ -579,11 +588,10 @@ export const RoomsPage: React.FC = () => {
                       </span>
                     </div>
 
-                    {room.price ? (
-                      <div className="text-[11px] font-bold text-primary mb-2">
-                        ₹{room.price.toLocaleString()} <span className="text-[10px] text-slate-400 font-normal">/ month</span>
-                      </div>
-                    ) : null}
+                    <div className="text-[11px] font-bold text-primary mb-2 flex items-center justify-between">
+                      <span className="text-slate-500 font-medium">Monthly Rent:</span>
+                      <span className="text-emerald-700 font-extrabold">₹{(room.price || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-normal">/ mo</span></span>
+                    </div>
 
                     {/* Bed Slots Grid */}
                     <div className="grid grid-cols-2 gap-2 mt-2">
@@ -715,12 +723,13 @@ export const RoomsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Room / Bed Monthly Price (₹)"
+              label="Monthly Room Rent (₹)"
               type="number"
-              min={0}
-              placeholder="e.g. 6500"
+              min={1}
+              placeholder="e.g. 7000"
               value={roomFormData.price || ''}
               onChange={(e) => setRoomFormData({ ...roomFormData, price: parseFloat(e.target.value) || 0 })}
+              required
             />
             <Select
               label="Room Status"
@@ -814,11 +823,13 @@ export const RoomsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Room / Bed Monthly Price (₹)"
+              label="Monthly Room Rent (₹)"
               type="number"
-              min={0}
-              value={editFormData.price || ''}
+              min={1}
+              placeholder="e.g. 7000"
+              value={editFormData.price !== undefined ? editFormData.price : ''}
               onChange={(e) => setEditFormData({ ...editFormData, price: parseFloat(e.target.value) || 0 })}
+              required
             />
             <Select
               label="Room Status"
@@ -874,10 +885,14 @@ export const RoomsPage: React.FC = () => {
         {selectedRoom && (
           <div className="flex flex-col gap-4">
             {/* Stats row */}
-            <div className="grid grid-cols-3 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
               <div>
                 <span className="text-[10px] font-bold uppercase text-slate-400 block">Capacity</span>
                 <span className="text-base font-extrabold text-navy-900">{selectedRoom.capacity} Beds</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase text-slate-400 block">Monthly Rent</span>
+                <span className="text-base font-extrabold text-emerald-700">₹{(selectedRoom.price || 0).toLocaleString()}</span>
               </div>
               <div>
                 <span className="text-[10px] font-bold uppercase text-slate-400 block">Occupied</span>

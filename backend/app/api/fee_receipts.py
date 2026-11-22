@@ -9,6 +9,7 @@ from app.models.guest import Guest
 from app.models.admission import Admission
 from app.models.finance import FeeReceipt, AccountTransaction
 from app.schemas.finance import FeeReceiptCreate, FeeReceiptResponse
+from app.utils.billing import calculate_cycle_for_date, calculate_billing_period
 
 router = APIRouter(prefix="/fee-receipts", tags=["Fee Receipts"])
 
@@ -31,11 +32,23 @@ def serialize_receipt(r: FeeReceipt, db: Session) -> FeeReceiptResponse:
     room_num = adm.room.room_number if (adm and adm.room) else None
     pkg_name = adm.package.name if (adm and adm.package) else None
 
+    # Derive dynamic billing period if missing on legacy receipt
+    period_start = r.period_start
+    period_end = r.period_end
+    if not period_start and adm and adm.admission_date:
+        calc_start, calc_end, _ = calculate_cycle_for_date(adm.admission_date, r.date)
+        period_start = calc_start
+        period_end = calc_end
+    elif not period_start and r.date:
+        calc_start, calc_end, _ = calculate_billing_period(r.date, r.date.day)
+        period_start = calc_start
+        period_end = calc_end
+
     return FeeReceiptResponse(
         id=r.id,
         receipt_no=r.receipt_no,
         guest_id=r.guest_id,
-        admission_id=r.admission_id,
+        admission_id=r.admission_id or (adm.id if adm else None),
         date=r.date,
         fee_type=r.fee_type,
         amount=r.amount,
@@ -44,8 +57,8 @@ def serialize_receipt(r: FeeReceipt, db: Session) -> FeeReceiptResponse:
         balance_amount=r.balance_amount,
         payment_mode=r.payment_mode,
         payment_reference=r.payment_reference,
-        period_start=r.period_start,
-        period_end=r.period_end,
+        period_start=period_start,
+        period_end=period_end,
         remarks=r.remarks,
         created_at=r.created_at,
         guest=r.guest,
@@ -102,10 +115,34 @@ def create_fee_receipt(
     paid = receipt_in.paid_amount if receipt_in.paid_amount is not None else (receipt_in.amount - receipt_in.discount)
     balance = receipt_in.balance_amount
 
+    # Resolve active admission if not explicitly passed
+    adm = None
+    if receipt_in.admission_id:
+        adm = db.query(Admission).filter(Admission.id == receipt_in.admission_id).first()
+    if not adm:
+        adm = db.query(Admission).filter(
+            Admission.guest_id == receipt_in.guest_id,
+            Admission.status == "Active"
+        ).first()
+
+    period_start = receipt_in.period_start
+    period_end = receipt_in.period_end
+
+    # If billing period is not explicitly provided, calculate dynamic cycle based on guest check-in date
+    if not period_start or not period_end:
+        if adm and adm.admission_date:
+            calc_start, calc_end, _ = calculate_cycle_for_date(adm.admission_date, receipt_in.date)
+            period_start = period_start or calc_start
+            period_end = period_end or calc_end
+        else:
+            calc_start, calc_end, _ = calculate_billing_period(receipt_in.date, receipt_in.date.day)
+            period_start = period_start or calc_start
+            period_end = period_end or calc_end
+
     receipt = FeeReceipt(
         receipt_no=receipt_no,
         guest_id=receipt_in.guest_id,
-        admission_id=receipt_in.admission_id,
+        admission_id=receipt_in.admission_id or (adm.id if adm else None),
         date=receipt_in.date,
         fee_type=receipt_in.fee_type,
         amount=receipt_in.amount,
@@ -114,8 +151,8 @@ def create_fee_receipt(
         balance_amount=balance,
         payment_mode=receipt_in.payment_mode,
         payment_reference=receipt_in.payment_reference,
-        period_start=receipt_in.period_start,
-        period_end=receipt_in.period_end,
+        period_start=period_start,
+        period_end=period_end,
         remarks=receipt_in.remarks
     )
     db.add(receipt)

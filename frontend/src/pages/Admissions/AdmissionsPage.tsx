@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { admissionService } from '../../services/admissionService';
 import { roomService } from '../../services/roomService';
@@ -12,7 +12,8 @@ import { Modal } from '../../components/Modal';
 import { Input } from '../../components/Input';
 import { Select } from '../../components/Select';
 import { useToast } from '../../context/ToastContext';
-import { Plus, UserCheck, DoorOpen, Calendar, LogOut } from 'lucide-react';
+import { calculateBillingPeriod, formatDateDDMMYYYY } from '../../utils/billing';
+import { Plus, UserCheck, DoorOpen, Calendar, LogOut, Clock } from 'lucide-react';
 
 export const AdmissionsPage: React.FC = () => {
   const [admissions, setAdmissions] = useState<Admission[]>([]);
@@ -46,7 +47,7 @@ export const AdmissionsPage: React.FC = () => {
     package_id: '',
     admission_date: new Date().toISOString().split('T')[0],
     security_deposit: '5000',
-    monthly_fee: '6500',
+    monthly_fee: '',
     notes: '',
   });
 
@@ -87,19 +88,26 @@ export const AdmissionsPage: React.FC = () => {
     }
   }, [location.state]);
 
-  // When room changes, clear bed
+  // When room changes, clear bed and auto-fill monthly rent from room configuration
   const handleRoomChange = (roomId: string) => {
-    setFormData((prev) => ({ ...prev, room_id: roomId, bed_id: '' }));
+    const selected = rooms.find((r) => r.id.toString() === roomId);
+    const roomRent = selected && selected.price && selected.price > 0 ? selected.price.toString() : '';
+    setFormData((prev) => ({
+      ...prev,
+      room_id: roomId,
+      bed_id: '',
+      monthly_fee: roomRent || prev.monthly_fee,
+    }));
   };
 
-  // When package changes, update fee and deposit defaults
+  // When package changes, update deposit defaults (and monthly fee if room rent is not set)
   const handlePackageChange = (packageId: string) => {
     const pkg = packages.find((p) => p.id.toString() === packageId);
     if (pkg) {
       setFormData((prev) => ({
         ...prev,
         package_id: packageId,
-        monthly_fee: pkg.monthly_fee.toString(),
+        monthly_fee: prev.monthly_fee || pkg.monthly_fee.toString(),
         security_deposit: pkg.security_deposit.toString(),
       }));
     } else {
@@ -111,10 +119,20 @@ export const AdmissionsPage: React.FC = () => {
   const currentRoom = rooms.find((r) => r.id.toString() === formData.room_id);
   const availableBeds = currentRoom ? currentRoom.beds.filter((b) => !b.is_occupied) : [];
 
+  // Compute dynamic monthly billing cycle based on guest check-in / admission date
+  const billingCycle = useMemo(() => {
+    if (!formData.admission_date) return null;
+    return calculateBillingPeriod(formData.admission_date);
+  }, [formData.admission_date]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.guest_name || !formData.contact_no || !formData.room_id || !formData.bed_id) {
       toastError('Please fill in guest details, room, and bed');
+      return;
+    }
+    if (!formData.monthly_fee || parseFloat(formData.monthly_fee) <= 0) {
+      toastError('Agreed monthly room rent is required and must be greater than ₹0');
       return;
     }
 
@@ -245,6 +263,8 @@ export const AdmissionsPage: React.FC = () => {
             variant="primary"
             icon={<Plus className="w-4 h-4" />}
             onClick={() => {
+              const firstRoom = rooms.find((r) => r.vacant_count > 0) || rooms[0];
+              const firstRent = firstRoom && firstRoom.price && firstRoom.price > 0 ? firstRoom.price.toString() : '';
               setFormData({
                 guest_name: '',
                 contact_no: '',
@@ -255,12 +275,12 @@ export const AdmissionsPage: React.FC = () => {
                 address: '',
                 id_proof_type: 'Aadhar Card',
                 id_proof_number: '',
-                room_id: rooms[0]?.id.toString() || '',
+                room_id: firstRoom?.id.toString() || '',
                 bed_id: '',
-                package_id: packages[0]?.id.toString() || '',
+                package_id: '',
                 admission_date: new Date().toISOString().split('T')[0],
                 security_deposit: '5000',
-                monthly_fee: '6500',
+                monthly_fee: firstRent,
                 notes: '',
               });
               setIsModalOpen(true);
@@ -379,7 +399,7 @@ export const AdmissionsPage: React.FC = () => {
                 { value: '', label: rooms.length > 0 ? 'Select Room...' : 'No rooms available' },
                 ...rooms.map((r) => ({
                   value: r.id,
-                  label: `Room ${r.room_number} (Fl ${r.floor} • ${r.vacant_count} vacant)`,
+                  label: `Room ${r.room_number} (Fl ${r.floor} • Rent: ₹${(r.price || 0).toLocaleString()}/mo • ${r.vacant_count} vacant)`,
                 })),
               ]}
               required
@@ -400,9 +420,34 @@ export const AdmissionsPage: React.FC = () => {
             />
           </div>
 
+          {currentRoom && (
+            <div className="flex items-center justify-between p-2.5 bg-emerald-50/80 border border-emerald-100 rounded-xl text-xs text-emerald-800">
+              <span>Configured Room Rent: <strong>₹{(currentRoom.price || 0).toLocaleString()} / month</strong></span>
+              <span className="text-[11px] text-emerald-600 font-medium">Applied automatically to admission</span>
+            </div>
+          )}
+
+          {billingCycle && (
+            <div className="p-3 bg-purple-50/80 border border-purple-100 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+              <div>
+                <span className="font-bold text-navy-900 block flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-primary" />
+                  Monthly Rent Cycle (Check-in Date: {formatDateDDMMYYYY(formData.admission_date)})
+                </span>
+                <span className="text-slate-600 mt-0.5 block">
+                  First Billing Period: <strong className="text-primary">{formatDateDDMMYYYY(billingCycle.periodStart)}</strong> to <strong className="text-primary">{formatDateDDMMYYYY(billingCycle.periodEnd)}</strong>
+                </span>
+              </div>
+              <div className="sm:text-right bg-white px-3 py-1.5 rounded-lg border border-purple-200/60 shadow-xs">
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Next Rent Due Date</span>
+                <span className="font-extrabold text-emerald-700 text-xs">{formatDateDDMMYYYY(billingCycle.nextDueDate)}</span>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Select
-              label="Package"
+              label="Package (Optional)"
               value={formData.package_id}
               onChange={(e) => handlePackageChange(e.target.value)}
               options={[
@@ -414,8 +459,10 @@ export const AdmissionsPage: React.FC = () => {
               ]}
             />
             <Input
-              label="Monthly Fee (₹)"
+              label="Agreed Monthly Rent (₹)"
               type="number"
+              min={1}
+              placeholder="e.g. 7000"
               value={formData.monthly_fee}
               onChange={(e) => setFormData({ ...formData, monthly_fee: e.target.value })}
               required

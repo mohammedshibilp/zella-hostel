@@ -129,8 +129,16 @@ def check_in_booking(
     db.add(guest)
     db.flush()
 
-    monthly_fee = booking.package.monthly_fee if booking.package else 6500.0
-    security_deposit = booking.package.security_deposit if booking.package else 5000.0
+    room = db.query(Room).filter(Room.id == booking.room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Assigned room not found")
+
+    # Dynamically use selected room's configured rent; never hardcode
+    monthly_fee = room.price if (room.price and room.price > 0) else (booking.package.monthly_fee if booking.package else 0.0)
+    security_deposit = booking.package.security_deposit if booking.package else 0.0
+
+    # Actual accommodation date determines the rent cycle start date
+    actual_check_in_date = date.today()
 
     # Create Admission
     admission = Admission(
@@ -138,7 +146,7 @@ def check_in_booking(
         room_id=booking.room_id,
         bed_id=booking.bed_id,
         package_id=booking.package_id,
-        admission_date=date.today(),
+        admission_date=actual_check_in_date,
         security_deposit=security_deposit,
         monthly_fee=monthly_fee,
         status="Active",

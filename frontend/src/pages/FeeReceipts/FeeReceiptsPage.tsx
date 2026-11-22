@@ -19,6 +19,11 @@ import {
   buildWhatsAppChatUrl,
 } from '../../utils/whatsapp';
 import {
+  calculateBillingPeriod,
+  getCycleForDate,
+  formatDateDDMMYYYY,
+} from '../../utils/billing';
+import {
   Plus,
   Receipt,
   Printer,
@@ -27,6 +32,7 @@ import {
   Calendar,
   CreditCard,
   Tag,
+  Clock,
 } from 'lucide-react';
 
 export const FeeReceiptsPage: React.FC = () => {
@@ -45,9 +51,9 @@ export const FeeReceiptsPage: React.FC = () => {
     guest_id: '',
     date: new Date().toISOString().split('T')[0],
     fee_type: 'Hostel Accommodation Fee',
-    amount: '6500',
+    amount: '',
     discount: '0',
-    paid_amount: '6500',
+    paid_amount: '',
     balance_amount: '0',
     payment_mode: 'Cash',
     payment_reference: '',
@@ -78,6 +84,48 @@ export const FeeReceiptsPage: React.FC = () => {
     loadData();
   }, []);
 
+  const handleResidentChange = (guestId: string) => {
+    const selectedGuest = guests.find((g) => g.id.toString() === guestId);
+    let amountVal = '';
+    let periodStart = formData.date;
+    let periodEnd = '';
+
+    if (selectedGuest) {
+      if (selectedGuest.monthly_fee && selectedGuest.monthly_fee > 0) {
+        amountVal = selectedGuest.monthly_fee.toString();
+      } else if (selectedGuest.agreed_rent && selectedGuest.agreed_rent > 0) {
+        amountVal = selectedGuest.agreed_rent.toString();
+      }
+
+      if (selectedGuest.admission_date) {
+        const cycle = getCycleForDate(selectedGuest.admission_date, formData.date);
+        periodStart = cycle.periodStart;
+        periodEnd = cycle.periodEnd;
+      } else if (selectedGuest.current_period_start && selectedGuest.current_period_end) {
+        periodStart = selectedGuest.current_period_start;
+        periodEnd = selectedGuest.current_period_end;
+      } else {
+        const cycle = calculateBillingPeriod(formData.date);
+        periodStart = cycle.periodStart;
+        periodEnd = cycle.periodEnd;
+      }
+    }
+
+    setFormData((prev) => {
+      const disc = parseFloat(prev.discount) || 0;
+      const amt = parseFloat(amountVal) || 0;
+      const net = Math.max(0, amt - disc);
+      return {
+        ...prev,
+        guest_id: guestId,
+        amount: amountVal,
+        paid_amount: net > 0 ? net.toString() : amountVal,
+        period_start: periodStart,
+        period_end: periodEnd,
+      };
+    });
+  };
+
   const handleAmountChange = (amountStr: string, discountStr: string) => {
     const amt = parseFloat(amountStr) || 0;
     const disc = parseFloat(discountStr) || 0;
@@ -106,8 +154,8 @@ export const FeeReceiptsPage: React.FC = () => {
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.guest_id || !formData.amount) {
-      toastError('Please select a resident and enter fee amount');
+    if (!formData.guest_id || !formData.amount || parseFloat(formData.amount) <= 0) {
+      toastError('Please select a resident and enter a valid fee amount greater than ₹0');
       return;
     }
 
@@ -166,12 +214,14 @@ export const FeeReceiptsPage: React.FC = () => {
   const formatBillingPeriod = (receipt: FeeReceipt): string => {
     if (receipt.billing_period) return receipt.billing_period;
     if (receipt.period_start && receipt.period_end) {
-      return `${formatDateDMY(receipt.period_start)} to ${formatDateDMY(receipt.period_end)}`;
+      return `${formatDateDDMMYYYY(receipt.period_start)} to ${formatDateDDMMYYYY(receipt.period_end)}`;
     }
     if (receipt.period_start) {
-      return `${formatDateDMY(receipt.period_start)} to Month-end`;
+      const cycle = calculateBillingPeriod(receipt.period_start);
+      return `${formatDateDDMMYYYY(cycle.periodStart)} to ${formatDateDDMMYYYY(cycle.periodEnd)}`;
     }
-    return `${formatDateDMY(receipt.date)} to Month-end`;
+    const cycle = calculateBillingPeriod(receipt.date);
+    return `${formatDateDDMMYYYY(cycle.periodStart)} to ${formatDateDDMMYYYY(cycle.periodEnd)}`;
   };
 
   const handleDownloadPdf = async () => {
@@ -392,18 +442,45 @@ export const FeeReceiptsPage: React.FC = () => {
             variant="primary"
             icon={<Plus className="w-4 h-4" />}
             onClick={() => {
+              const firstGuest = guests[0];
+              let initialAmount = '';
+              const todayStr = new Date().toISOString().split('T')[0];
+              let initialStart = todayStr;
+              let initialEnd = '';
+
+              if (firstGuest) {
+                if (firstGuest.monthly_fee && firstGuest.monthly_fee > 0) {
+                  initialAmount = firstGuest.monthly_fee.toString();
+                } else if (firstGuest.agreed_rent && firstGuest.agreed_rent > 0) {
+                  initialAmount = firstGuest.agreed_rent.toString();
+                }
+
+                if (firstGuest.admission_date) {
+                  const cycle = getCycleForDate(firstGuest.admission_date, todayStr);
+                  initialStart = cycle.periodStart;
+                  initialEnd = cycle.periodEnd;
+                } else if (firstGuest.current_period_start && firstGuest.current_period_end) {
+                  initialStart = firstGuest.current_period_start;
+                  initialEnd = firstGuest.current_period_end;
+                } else {
+                  const cycle = calculateBillingPeriod(todayStr);
+                  initialStart = cycle.periodStart;
+                  initialEnd = cycle.periodEnd;
+                }
+              }
+
               setFormData({
-                guest_id: guests[0]?.id.toString() || '',
-                date: new Date().toISOString().split('T')[0],
+                guest_id: firstGuest?.id.toString() || '',
+                date: todayStr,
                 fee_type: 'Hostel Accommodation Fee',
-                amount: '6500',
+                amount: initialAmount,
                 discount: '0',
-                paid_amount: '6500',
+                paid_amount: initialAmount,
                 balance_amount: '0',
                 payment_mode: 'Cash',
                 payment_reference: '',
-                period_start: new Date().toISOString().split('T')[0],
-                period_end: '',
+                period_start: initialStart,
+                period_end: initialEnd,
                 remarks: '',
               });
               setIsCreateOpen(true);
@@ -435,12 +512,12 @@ export const FeeReceiptsPage: React.FC = () => {
             <Select
               label="Select Resident"
               value={formData.guest_id}
-              onChange={(e) => setFormData({ ...formData, guest_id: e.target.value })}
+              onChange={(e) => handleResidentChange(e.target.value)}
               options={[
                 { value: '', label: 'Select Resident...' },
                 ...guests.map((g) => ({
                   value: g.id,
-                  label: `${g.name} (${g.room_number ? `Room ${g.room_number}` : g.contact_no})`,
+                  label: `${g.name} (${g.room_number ? `Room ${g.room_number}` : g.contact_no}${g.monthly_fee ? ` • ₹${g.monthly_fee.toLocaleString()}/mo` : ''})`,
                 })),
               ]}
               required
@@ -451,6 +528,44 @@ export const FeeReceiptsPage: React.FC = () => {
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required
+            />
+          </div>
+
+          {guests.find((g) => g.id.toString() === formData.guest_id) && (() => {
+            const guestInfo = guests.find((g) => g.id.toString() === formData.guest_id);
+            return (
+              <div className="p-3 bg-purple-50/80 border border-purple-100 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                <div>
+                  <span className="font-bold text-navy-900 block flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-primary" />
+                    Resident Rent Agreement: <strong className="text-emerald-700">₹{(guestInfo?.monthly_fee || guestInfo?.agreed_rent || 0).toLocaleString()} / month</strong>
+                  </span>
+                  <span className="text-slate-600 mt-0.5 block">
+                    Billing Period: <strong className="text-primary">{formatDateDDMMYYYY(formData.period_start)}</strong> to <strong className="text-primary">{formatDateDDMMYYYY(formData.period_end)}</strong>
+                  </span>
+                </div>
+                {guestInfo?.admission_date && (
+                  <div className="sm:text-right bg-white px-2.5 py-1 rounded-lg border border-purple-200/60 shadow-xs">
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold">Check-in Date</span>
+                    <span className="font-semibold text-slate-700">{formatDateDDMMYYYY(guestInfo.admission_date)}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Billing Period Start"
+              type="date"
+              value={formData.period_start}
+              onChange={(e) => setFormData({ ...formData, period_start: e.target.value })}
+            />
+            <Input
+              label="Billing Period End"
+              type="date"
+              value={formData.period_end}
+              onChange={(e) => setFormData({ ...formData, period_end: e.target.value })}
             />
           </div>
 

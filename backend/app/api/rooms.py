@@ -259,12 +259,15 @@ def create_room(
     if room_in.floor < 0:
         raise HTTPException(status_code=400, detail="Floor number cannot be negative")
 
+    if room_in.price is None or room_in.price <= 0:
+        raise HTTPException(status_code=400, detail="Monthly room rent is required and must be greater than ₹0")
+
     room = Room(
         room_number=clean_room_number,
         floor=room_in.floor,
         capacity=room_in.capacity,
         room_type=room_in.room_type or "Standard Sharing",
-        price=room_in.price or 0.0,
+        price=room_in.price,
         status=room_in.status or "Available",
         notes=room_in.notes,
     )
@@ -338,6 +341,8 @@ def update_room(
         room.room_type = room_in.room_type
 
     if room_in.price is not None:
+        if room_in.price <= 0:
+            raise HTTPException(status_code=400, detail="Monthly room rent must be greater than ₹0")
         room.price = room_in.price
 
     if room_in.status is not None:

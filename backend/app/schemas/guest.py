@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date as dt_date
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
@@ -40,3 +40,13 @@ class GuestResponse(GuestBase):
     created_at: datetime
     room_number: Optional[str] = None
     bed_number: Optional[str] = None
+    room_id: Optional[int] = None
+    bed_id: Optional[int] = None
+    package_name: Optional[str] = None
+    admission_id: Optional[int] = None
+    admission_date: Optional[dt_date] = None
+    agreed_rent: Optional[float] = None
+    monthly_fee: Optional[float] = None
+    current_period_start: Optional[dt_date] = None
+    current_period_end: Optional[dt_date] = None
+    next_due_date: Optional[dt_date] = None

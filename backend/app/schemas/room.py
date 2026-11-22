@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class BedBase(BaseModel):
@@ -33,17 +33,25 @@ class BedResponse(BedBase):
 
 
 class RoomBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     room_number: str
     floor: int
     capacity: int = 2
     room_type: str = "Standard Sharing"
-    price: Optional[float] = 0.0
+    price: float = Field(default=0.0, description="Monthly Room Rent in INR")
     status: str = "Available"
     notes: Optional[str] = None
 
 
-class RoomCreate(RoomBase):
-    pass
+class RoomCreate(BaseModel):
+    room_number: str
+    floor: int
+    capacity: int = 2
+    room_type: str = "Standard Sharing"
+    price: float = Field(..., gt=0, description="Monthly Room Rent in INR, required and must be greater than 0")
+    status: str = "Available"
+    notes: Optional[str] = None
 
 
 class RoomUpdate(BaseModel):
@@ -51,7 +59,7 @@ class RoomUpdate(BaseModel):
     floor: Optional[int] = None
     capacity: Optional[int] = None
     room_type: Optional[str] = None
-    price: Optional[float] = None
+    price: Optional[float] = Field(None, gt=0, description="Monthly Room Rent in INR, must be greater than 0")
     status: Optional[str] = None
     notes: Optional[str] = None
 

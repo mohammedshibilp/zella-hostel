@@ -1,4 +1,5 @@
 import { FeeReceipt, Guest } from '../types';
+import { calculateBillingPeriod, formatDateDDMMYYYY } from './billing';
 
 /**
  * Normalizes phone numbers for WhatsApp click-to-chat (https://wa.me/NUMBER).
@@ -127,12 +128,14 @@ export const formatPackage = (receipt: FeeReceipt, fallbackGuest?: Guest | null)
 export const formatBillingPeriod = (receipt: FeeReceipt): string => {
   if (receipt.billing_period) return receipt.billing_period;
   if (receipt.period_start && receipt.period_end) {
-    return `${formatDateDMY(receipt.period_start)} to ${formatDateDMY(receipt.period_end)}`;
+    return `${formatDateDDMMYYYY(receipt.period_start)} to ${formatDateDDMMYYYY(receipt.period_end)}`;
   }
   if (receipt.period_start) {
-    return `${formatDateDMY(receipt.period_start)} to Month-end`;
+    const cycle = calculateBillingPeriod(receipt.period_start);
+    return `${formatDateDDMMYYYY(cycle.periodStart)} to ${formatDateDDMMYYYY(cycle.periodEnd)}`;
   }
-  return `${formatDateDMY(receipt.date)} to Month-end`;
+  const cycle = calculateBillingPeriod(receipt.date);
+  return `${formatDateDDMMYYYY(cycle.periodStart)} to ${formatDateDDMMYYYY(cycle.periodEnd)}`;
 };
 
 /**

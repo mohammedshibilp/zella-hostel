@@ -108,6 +108,16 @@ export interface Guest {
   created_at: string;
   room_number?: string;
   bed_number?: string;
+  room_id?: number;
+  bed_id?: number;
+  package_name?: string;
+  admission_id?: number;
+  admission_date?: string;
+  agreed_rent?: number;
+  monthly_fee?: number;
+  current_period_start?: string;
+  current_period_end?: string;
+  next_due_date?: string;
 }
 
 export interface Admission {
@@ -127,6 +137,9 @@ export interface Admission {
   room?: Room;
   bed?: Bed;
   package?: Package;
+  period_start?: string;
+  period_end?: string;
+  next_due_date?: string;
 }
 
 export interface Booking {

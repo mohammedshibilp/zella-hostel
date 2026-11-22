@@ -24,7 +24,7 @@ class AdmissionCreate(BaseModel):
     package_id: Optional[int] = None
     admission_date: dt_date = Field(default_factory=dt_date.today)
     security_deposit: float = 0.0
-    monthly_fee: float
+    monthly_fee: float = Field(..., gt=0, description="Agreed monthly room rent, must be greater than 0")
     notes: Optional[str] = None
 
 
@@ -32,7 +32,7 @@ class AdmissionUpdate(BaseModel):
     room_id: Optional[int] = None
     bed_id: Optional[int] = None
     package_id: Optional[int] = None
-    monthly_fee: Optional[float] = None
+    monthly_fee: Optional[float] = Field(None, gt=0, description="Updated agreed monthly rent")
     security_deposit: Optional[float] = None
     status: Optional[str] = None
     checkout_date: Optional[dt_date] = None
@@ -63,3 +63,6 @@ class AdmissionResponse(BaseModel):
     room: Optional[RoomBase] = None
     bed: Optional[BedResponse] = None
     package: Optional[PackageResponse] = None
+    period_start: Optional[dt_date] = None
+    period_end: Optional[dt_date] = None
+    next_due_date: Optional[dt_date] = None

@@ -3,7 +3,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.api.deps import require_staff_or_admin
+from app.api.deps import require_staff_or_admin, require_admin
 from app.models.user import User
 from app.models.guest import Guest
 from app.models.room import Room, Bed
@@ -16,8 +16,18 @@ from app.schemas.admission import (
     AdmissionCheckout,
     AdmissionResponse,
 )
+from app.utils.billing import calculate_billing_period
 
 router = APIRouter(prefix="/admissions", tags=["Admissions"])
+
+
+def _enrich_admission_response(a: Admission) -> AdmissionResponse:
+    p_start, p_end, next_due = calculate_billing_period(a.admission_date, a.admission_date.day)
+    resp = AdmissionResponse.model_validate(a)
+    resp.period_start = p_start
+    resp.period_end = p_end
+    resp.next_due_date = next_due
+    return resp
 
 
 @router.get("", response_model=List[AdmissionResponse])
@@ -35,7 +45,8 @@ def get_admissions(
         query = query.filter(Admission.guest_id == guest_id)
     if room_id:
         query = query.filter(Admission.room_id == room_id)
-    return query.order_by(Admission.admission_date.desc(), Admission.id.desc()).all()
+    admissions = query.order_by(Admission.admission_date.desc(), Admission.id.desc()).all()
+    return [_enrich_admission_response(a) for a in admissions]
 
 
 @router.post("", response_model=AdmissionResponse, status_code=status.HTTP_201_CREATED)
@@ -57,6 +68,13 @@ def create_admission(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Bed {bed.bed_number} is already occupied. Please select an available bed."
+        )
+
+    # Validate monthly fee / rent
+    if adm_in.monthly_fee is None or adm_in.monthly_fee <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Agreed monthly rent must be a valid amount greater than ₹0."
         )
 
     # 2. Resolve Guest (either existing or new)
@@ -123,7 +141,31 @@ def create_admission(
 
     db.commit()
     db.refresh(admission)
-    return admission
+    return _enrich_admission_response(admission)
+
+
+@router.patch("/{admission_id}", response_model=AdmissionResponse)
+@router.put("/{admission_id}", response_model=AdmissionResponse)
+def update_admission(
+    admission_id: int,
+    adm_update: AdmissionUpdate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    adm = db.query(Admission).filter(Admission.id == admission_id).first()
+    if not adm:
+        raise HTTPException(status_code=404, detail="Admission not found")
+    if adm_update.monthly_fee is not None:
+        if adm_update.monthly_fee <= 0:
+            raise HTTPException(status_code=400, detail="Agreed monthly rent must be greater than ₹0")
+        adm.monthly_fee = adm_update.monthly_fee
+    if adm_update.security_deposit is not None:
+        adm.security_deposit = adm_update.security_deposit
+    if adm_update.notes is not None:
+        adm.notes = adm_update.notes
+    db.commit()
+    db.refresh(adm)
+    return _enrich_admission_response(adm)
 
 
 @router.post("/{admission_id}/checkout", response_model=AdmissionResponse)
@@ -167,4 +209,4 @@ def checkout_admission(
 
     db.commit()
     db.refresh(admission)
-    return admission
+    return _enrich_admission_response(admission)
