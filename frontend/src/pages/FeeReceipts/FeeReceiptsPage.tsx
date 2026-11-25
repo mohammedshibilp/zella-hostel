@@ -373,37 +373,42 @@ export const FeeReceiptsPage: React.FC = () => {
     if (!receiptPrintRef.current) return;
     setIsExportingPdf(true);
     try {
-      const html2pdfModule = await import('html2pdf.js');
-      const html2pdf = html2pdfModule.default || html2pdfModule;
+      const html2canvasModule = await import('html2canvas');
+      const html2canvas = (html2canvasModule.default || html2canvasModule) as unknown as (
+        element: HTMLElement,
+        options?: any
+      ) => Promise<HTMLCanvasElement>;
+      const { jsPDF } = await import('jspdf');
+
       const cleanReceiptNo = (receiptEditState.receiptNo || selectedReceipt?.receipt_no || 'Fee_Receipt').replace(/[^a-zA-Z0-9_-]/g, '_');
       const filename = `Zella_Receipt_${cleanReceiptNo}.pdf`;
 
-      const opt = {
-        margin: 0,
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          letterRendering: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          scrollY: 0,
-          width: 688,
-          height: 756,
-          windowWidth: 688,
-        },
-        jsPDF: { unit: 'pt', format: [516.64, 568.11], orientation: 'portrait' },
-        pagebreak: { mode: 'avoid-all' },
-      };
-
-      const pdfWorker = html2pdf().from(receiptPrintRef.current).set(opt).toPdf().get('pdf');
-      const pdf = await pdfWorker;
-      while (pdf.internal.getNumberOfPages() > 1) {
-        pdf.deletePage(pdf.internal.getNumberOfPages());
+      // 1. Ensure all custom webfonts are loaded before rendering
+      if (document.fonts) {
+        await document.fonts.ready;
       }
-      await pdf.save(filename);
-      success('Receipt PDF downloaded successfully (Single-Page)!');
+
+      // 2. Capture the exact live DOM preview with high resolution (scale: 2.5)
+      const canvas = await html2canvas(receiptPrintRef.current, {
+        scale: 2.5,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        scrollY: 0,
+        scrollX: 0,
+      });
+
+      // 3. Create single-page PDF with exact reference proportions (516.64pt x 568.11pt)
+      const pdf = new jsPDF({
+        unit: 'pt',
+        format: [516.64, 568.11],
+        orientation: 'portrait',
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      pdf.addImage(imgData, 'JPEG', 0, 0, 516.64, 568.11);
+      pdf.save(filename);
+      success('Receipt PDF downloaded successfully (Exact Preview Match)!');
     } catch (err) {
       toastError('Failed to generate PDF');
     } finally {
@@ -465,36 +470,40 @@ export const FeeReceiptsPage: React.FC = () => {
 
     setIsSharingWhatsapp(true);
     try {
-      const html2pdfModule = await import('html2pdf.js');
-      const html2pdf = html2pdfModule.default || html2pdfModule;
+      const html2canvasModule = await import('html2canvas');
+      const html2canvas = (html2canvasModule.default || html2canvasModule) as unknown as (
+        element: HTMLElement,
+        options?: any
+      ) => Promise<HTMLCanvasElement>;
+      const { jsPDF } = await import('jspdf');
+
       const cleanReceiptNo = (receiptEditState.receiptNo || selectedReceipt.receipt_no).replace(/[^a-zA-Z0-9_-]/g, '_');
       const filename = `Zella_Receipt_${cleanReceiptNo}.pdf`;
 
-      const opt = {
-        margin: 0,
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          letterRendering: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          scrollY: 0,
-          width: 688,
-          height: 756,
-          windowWidth: 688,
-        },
-        jsPDF: { unit: 'pt', format: [516.64, 568.11], orientation: 'portrait' },
-        pagebreak: { mode: 'avoid-all' },
-      };
-
-      // 1. Generate and validate the actual receipt PDF Blob (guaranteed single page)
-      const pdfWorker = html2pdf().from(receiptPrintRef.current).set(opt).toPdf().get('pdf');
-      const pdf = await pdfWorker;
-      while (pdf.internal.getNumberOfPages() > 1) {
-        pdf.deletePage(pdf.internal.getNumberOfPages());
+      // 1. Ensure all custom webfonts are loaded before rendering
+      if (document.fonts) {
+        await document.fonts.ready;
       }
+
+      // 2. Capture the exact live DOM preview with high resolution (scale: 2.5)
+      const canvas = await html2canvas(receiptPrintRef.current, {
+        scale: 2.5,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        scrollY: 0,
+        scrollX: 0,
+      });
+
+      // 3. Create single-page PDF with exact reference proportions (516.64pt x 568.11pt)
+      const pdf = new jsPDF({
+        unit: 'pt',
+        format: [516.64, 568.11],
+        orientation: 'portrait',
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      pdf.addImage(imgData, 'JPEG', 0, 0, 516.64, 568.11);
       const pdfBlob: Blob = pdf.output('blob');
 
       if (!pdfBlob || pdfBlob.size < 500) {
