@@ -389,15 +389,21 @@ export const FeeReceiptsPage: React.FC = () => {
           logging: false,
           backgroundColor: '#ffffff',
           scrollY: 0,
-          width: 689,
-          height: 758,
-          windowWidth: 689,
+          width: 688,
+          height: 756,
+          windowWidth: 688,
         },
         jsPDF: { unit: 'pt', format: [516.64, 568.11], orientation: 'portrait' },
+        pagebreak: { mode: 'avoid-all' },
       };
 
-      await html2pdf().from(receiptPrintRef.current).set(opt).save();
-      success('Receipt PDF downloaded successfully!');
+      const pdfWorker = html2pdf().from(receiptPrintRef.current).set(opt).toPdf().get('pdf');
+      const pdf = await pdfWorker;
+      while (pdf.internal.getNumberOfPages() > 1) {
+        pdf.deletePage(pdf.internal.getNumberOfPages());
+      }
+      await pdf.save(filename);
+      success('Receipt PDF downloaded successfully (Single-Page)!');
     } catch (err) {
       toastError('Failed to generate PDF');
     } finally {
@@ -475,16 +481,21 @@ export const FeeReceiptsPage: React.FC = () => {
           logging: false,
           backgroundColor: '#ffffff',
           scrollY: 0,
-          width: 689,
-          height: 758,
-          windowWidth: 689,
+          width: 688,
+          height: 756,
+          windowWidth: 688,
         },
         jsPDF: { unit: 'pt', format: [516.64, 568.11], orientation: 'portrait' },
+        pagebreak: { mode: 'avoid-all' },
       };
 
-      // 1. Generate and validate the actual receipt PDF Blob
-      const pdfWorker = html2pdf().from(receiptPrintRef.current).set(opt);
-      const pdfBlob: Blob = await pdfWorker.output('blob');
+      // 1. Generate and validate the actual receipt PDF Blob (guaranteed single page)
+      const pdfWorker = html2pdf().from(receiptPrintRef.current).set(opt).toPdf().get('pdf');
+      const pdf = await pdfWorker;
+      while (pdf.internal.getNumberOfPages() > 1) {
+        pdf.deletePage(pdf.internal.getNumberOfPages());
+      }
+      const pdfBlob: Blob = pdf.output('blob');
 
       if (!pdfBlob || pdfBlob.size < 500) {
         throw new Error('Generated PDF document is empty or invalid.');
@@ -1136,18 +1147,18 @@ export const FeeReceiptsPage: React.FC = () => {
 
               {/* Scrollable Container for Mobile Responsiveness */}
               <div className="w-full overflow-x-auto bg-slate-100/70 p-2 sm:p-6 rounded-xl border border-slate-200/80 flex justify-center">
-                {/* Printable Receipt Canvas Matching Reference PDF Exactly (516.64pt x 568.11pt = 689px x 758px) */}
+                {/* Printable Receipt Canvas Matching Reference PDF Exactly (516.64pt x 568.11pt = 688px x 756px) */}
                 <div
                   id="printable-receipt"
                   ref={receiptPrintRef}
                   className="bg-white border border-slate-200 shadow-sm text-slate-900 text-left font-sans shrink-0 select-text flex flex-col justify-between"
                   style={{
-                    width: '689px',
-                    minWidth: '689px',
-                    maxWidth: '689px',
-                    height: '758px',
-                    minHeight: '758px',
-                    maxHeight: '758px',
+                    width: '688px',
+                    minWidth: '688px',
+                    maxWidth: '688px',
+                    height: '756px',
+                    minHeight: '756px',
+                    maxHeight: '756px',
                     boxSizing: 'border-box',
                     backgroundColor: '#ffffff',
                     fontFamily:
@@ -1156,8 +1167,8 @@ export const FeeReceiptsPage: React.FC = () => {
                     position: 'relative',
                   }}
                 >
-                  {/* Top & Main Content Container with Exact Model Margins (42.36pt = 56px left/right, 38px top) */}
-                  <div style={{ padding: '36px 46px 0px 46px' }}>
+                  {/* Top & Main Content Container with Exact Model Margins */}
+                  <div style={{ padding: '34px 44px 0px 44px' }}>
                     {/* 1. TOP HEADER */}
                     <div className="flex justify-between items-start gap-4">
                       {/* Left: Official Logo & ISO Certification Badge */}
@@ -1190,7 +1201,7 @@ export const FeeReceiptsPage: React.FC = () => {
                     </div>
 
                     {/* 2. TITLE & RECEIVED FROM METADATA */}
-                    <div className="mt-6 flex justify-between items-start gap-4">
+                    <div className="mt-5 flex justify-between items-start gap-4">
                       {/* Left: RECEIVED FROM & Red-highlighted Dynamic Fields */}
                       <div>
                         <div className="text-[11px] font-bold text-slate-700 tracking-wider uppercase mb-0.5">
@@ -1226,40 +1237,34 @@ export const FeeReceiptsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* 3. MAIN PAYMENT TABLE (DESCRIPTION | AMOUNT) */}
-                    <div className="mt-5 border-t border-b border-slate-900 overflow-hidden">
-                      <table className="w-full text-xs text-left border-collapse">
-                        <thead>
-                          <tr className="border-b border-slate-900 text-slate-900">
-                            <th className="py-1 px-2.5 font-extrabold uppercase tracking-wider text-left border-r border-slate-900 w-[76.7%] text-[11px]">
-                              DESCRIPTION
-                            </th>
-                            <th className="py-1 px-2.5 font-extrabold uppercase tracking-wider text-right w-[23.3%] text-[11px]">
-                              AMOUNT
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr className="min-h-[46px]">
-                            <td className="py-4 px-2.5 border-r border-slate-900 align-middle">
-                              <span
-                                className="text-[13.5px] font-bold"
-                                style={{ color: receiptEditState.redAccent ? '#C53030' : '#1E293B' }}
-                              >
-                                {receiptEditState.description}
-                              </span>
-                            </td>
-                            <td className="py-4 px-2.5 text-right align-middle">
-                              <span
-                                className="text-[13.5px] font-bold"
-                                style={{ color: receiptEditState.redAccent ? '#C53030' : '#1E293B' }}
-                              >
-                                ₹{receiptEditState.amount}
-                              </span>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
+                    {/* 3. MAIN PAYMENT TABLE (DESCRIPTION | AMOUNT) - Clean Flexbox Container */}
+                    <div className="mt-5 border-t border-b border-slate-900 overflow-hidden text-slate-900">
+                      <div className="flex border-b border-slate-900">
+                        <div className="py-1 px-2.5 font-extrabold uppercase tracking-wider text-left border-r border-slate-900 w-[76.7%] text-[11px]">
+                          DESCRIPTION
+                        </div>
+                        <div className="py-1 px-2.5 font-extrabold uppercase tracking-wider text-right w-[23.3%] text-[11px]">
+                          AMOUNT
+                        </div>
+                      </div>
+                      <div className="flex min-h-[46px] items-center">
+                        <div className="py-3 px-2.5 border-r border-slate-900 w-[76.7%]">
+                          <span
+                            className="text-[13.5px] font-bold"
+                            style={{ color: receiptEditState.redAccent ? '#C53030' : '#1E293B' }}
+                          >
+                            {receiptEditState.description}
+                          </span>
+                        </div>
+                        <div className="py-3 px-2.5 text-right w-[23.3%]">
+                          <span
+                            className="text-[13.5px] font-bold"
+                            style={{ color: receiptEditState.redAccent ? '#C53030' : '#1E293B' }}
+                          >
+                            ₹{receiptEditState.amount}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
                     {/* 4. MODE OF PAYMENT & TRANSACTION DATE */}
@@ -1269,14 +1274,14 @@ export const FeeReceiptsPage: React.FC = () => {
                           MODE OF PAYMENT
                         </span>
                         <span className="inline-flex items-center gap-1.5 font-bold text-slate-900">
-                          <span className="w-3.5 h-3.5 border border-slate-800 rounded-none inline-flex items-center justify-center text-[10px] font-black leading-none bg-white">
-                            {isUpiOrBank ? '✓' : ''}
+                          <span className="w-3.5 h-3.5 border border-slate-800 rounded-none inline-flex items-center justify-center p-[2px] bg-white">
+                            {isUpiOrBank && <span className="w-full h-full bg-slate-900 block" />}
                           </span>
                           <span>UPI / BANK</span>
                         </span>
                         <span className="inline-flex items-center gap-1.5 font-bold text-slate-900 ml-2">
-                          <span className="w-3.5 h-3.5 border border-slate-800 rounded-none inline-flex items-center justify-center text-[10px] font-black leading-none bg-white">
-                            {isCash ? '✓' : ''}
+                          <span className="w-3.5 h-3.5 border border-slate-800 rounded-none inline-flex items-center justify-center p-[2px] bg-white">
+                            {isCash && <span className="w-full h-full bg-slate-900 block" />}
                           </span>
                           <span>CASH</span>
                         </span>
@@ -1318,38 +1323,32 @@ export const FeeReceiptsPage: React.FC = () => {
                       </div>
 
                       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                        {/* Left: Fee Structure Rates Table without inner horizontal dividers */}
-                        <div className="w-[250px] border-t border-b border-slate-900">
-                          <table className="w-full text-[9.5px] text-left border-collapse">
-                            <thead>
-                              <tr className="border-b border-slate-900 text-slate-900 font-bold">
-                                <th className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-bold">DURATION</th>
-                                <th className="py-0.5 px-2 w-[47%] font-bold">PRICE</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <td className="py-0.5 px-2 border-r border-slate-900 font-medium text-slate-800">1 DAY</td>
-                                <td className="py-0.5 px-2 font-semibold text-slate-900">₹ 500/-</td>
-                              </tr>
-                              <tr>
-                                <td className="py-0.5 px-2 border-r border-slate-900 font-medium text-slate-800">2 TO 5 DAYS</td>
-                                <td className="py-0.5 px-2 font-semibold text-slate-900">₹ 350/- Per Day</td>
-                              </tr>
-                              <tr>
-                                <td className="py-0.5 px-2 border-r border-slate-900 font-medium text-slate-800">5 TO 10 DAYS</td>
-                                <td className="py-0.5 px-2 font-semibold text-slate-900">₹ 2500/-</td>
-                              </tr>
-                              <tr>
-                                <td className="py-0.5 px-2 border-r border-slate-900 font-medium text-slate-800">10 TO 15 DAYS</td>
-                                <td className="py-0.5 px-2 font-semibold text-slate-900">₹ 3500/-</td>
-                              </tr>
-                              <tr>
-                                <td className="py-0.5 px-2 border-r border-slate-900 font-medium text-slate-800">15 TO 20 DAYS</td>
-                                <td className="py-0.5 px-2 font-semibold text-slate-900">₹ 4500/-</td>
-                              </tr>
-                            </tbody>
-                          </table>
+                        {/* Left: Fee Structure Rates Table without inner horizontal dividers (Flexbox) */}
+                        <div className="w-[250px] border-t border-b border-slate-900 text-[9.5px] text-left">
+                          <div className="flex border-b border-slate-900 text-slate-900 font-bold">
+                            <div className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-bold">DURATION</div>
+                            <div className="py-0.5 px-2 w-[47%] font-bold">PRICE</div>
+                          </div>
+                          <div className="flex">
+                            <div className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-medium text-slate-800">1 DAY</div>
+                            <div className="py-0.5 px-2 w-[47%] font-semibold text-slate-900">₹ 500/-</div>
+                          </div>
+                          <div className="flex">
+                            <div className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-medium text-slate-800">2 TO 5 DAYS</div>
+                            <div className="py-0.5 px-2 w-[47%] font-semibold text-slate-900">₹ 350/- Per Day</div>
+                          </div>
+                          <div className="flex">
+                            <div className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-medium text-slate-800">5 TO 10 DAYS</div>
+                            <div className="py-0.5 px-2 w-[47%] font-semibold text-slate-900">₹ 2500/-</div>
+                          </div>
+                          <div className="flex">
+                            <div className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-medium text-slate-800">10 TO 15 DAYS</div>
+                            <div className="py-0.5 px-2 w-[47%] font-semibold text-slate-900">₹ 3500/-</div>
+                          </div>
+                          <div className="flex">
+                            <div className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-medium text-slate-800">15 TO 20 DAYS</div>
+                            <div className="py-0.5 px-2 w-[47%] font-semibold text-slate-900">₹ 4500/-</div>
+                          </div>
                         </div>
 
                         {/* Right: Optional Official Seal & Signature (when toggled on by admin) */}
@@ -1389,7 +1388,7 @@ export const FeeReceiptsPage: React.FC = () => {
                   <div
                     className="w-full shrink-0"
                     style={{
-                      height: '30px',
+                      height: '26px',
                       backgroundColor: '#D81B60',
                       margin: 0,
                     }}
