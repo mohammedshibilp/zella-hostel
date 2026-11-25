@@ -1237,18 +1237,27 @@ export const FeeReceiptsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* 3. MAIN PAYMENT TABLE (DESCRIPTION | AMOUNT) - Clean Flexbox Container */}
-                    <div className="mt-5 border-t border-b border-slate-900 overflow-hidden text-slate-900">
-                      <div className="flex border-b border-slate-900">
-                        <div className="py-1 px-2.5 font-extrabold uppercase tracking-wider text-left border-r border-slate-900 w-[76.7%] text-[11px]">
+                    {/* 3. MAIN PAYMENT TABLE (DESCRIPTION | AMOUNT) */}
+                    <div className="mt-5 w-full text-slate-900">
+                      {/* Top border line */}
+                      <div className="w-full h-[1.5px] bg-slate-900" />
+
+                      {/* Header Row */}
+                      <div className="flex h-[26px]">
+                        <div className="px-2.5 font-extrabold uppercase tracking-wider text-left border-r border-slate-900 w-[76.7%] text-[11px] flex items-center">
                           DESCRIPTION
                         </div>
-                        <div className="py-1 px-2.5 font-extrabold uppercase tracking-wider text-right w-[23.3%] text-[11px]">
+                        <div className="px-2.5 font-extrabold uppercase tracking-wider text-right w-[23.3%] text-[11px] flex items-center justify-end">
                           AMOUNT
                         </div>
                       </div>
-                      <div className="flex min-h-[46px] items-center">
-                        <div className="py-3 px-2.5 border-r border-slate-900 w-[76.7%]">
+
+                      {/* Middle separator line */}
+                      <div className="w-full h-[1px] bg-slate-900" />
+
+                      {/* Content Row - items-stretch ensures vertical divider reaches bottom line */}
+                      <div className="flex min-h-[46px] items-stretch">
+                        <div className="py-2.5 px-2.5 border-r border-slate-900 w-[76.7%] flex items-center">
                           <span
                             className="text-[13.5px] font-bold"
                             style={{ color: receiptEditState.redAccent ? '#C53030' : '#1E293B' }}
@@ -1256,7 +1265,7 @@ export const FeeReceiptsPage: React.FC = () => {
                             {receiptEditState.description}
                           </span>
                         </div>
-                        <div className="py-3 px-2.5 text-right w-[23.3%]">
+                        <div className="py-2.5 px-2.5 text-right w-[23.3%] flex items-center justify-end">
                           <span
                             className="text-[13.5px] font-bold"
                             style={{ color: receiptEditState.redAccent ? '#C53030' : '#1E293B' }}
@@ -1265,23 +1274,26 @@ export const FeeReceiptsPage: React.FC = () => {
                           </span>
                         </div>
                       </div>
+
+                      {/* Bottom border line */}
+                      <div className="w-full h-[1.5px] bg-slate-900" />
                     </div>
 
                     {/* 4. MODE OF PAYMENT & TRANSACTION DATE */}
-                    <div className="mt-3 flex flex-wrap justify-between items-center gap-2 text-[10.5px]">
+                    <div className="mt-3.5 flex flex-wrap justify-between items-center gap-2 text-[10.5px]">
                       <div className="flex items-center gap-3">
                         <span className="font-extrabold text-slate-900 tracking-wider uppercase">
                           MODE OF PAYMENT
                         </span>
                         <span className="inline-flex items-center gap-1.5 font-bold text-slate-900">
-                          <span className="w-3.5 h-3.5 border border-slate-800 rounded-none inline-flex items-center justify-center p-[2px] bg-white">
-                            {isUpiOrBank && <span className="w-full h-full bg-slate-900 block" />}
+                          <span className="w-3.5 h-3.5 border border-slate-700 rounded-none inline-flex items-center justify-center p-[2px] bg-white">
+                            {isUpiOrBank && <span className="w-1.5 h-1.5 bg-slate-900 block" />}
                           </span>
                           <span>UPI / BANK</span>
                         </span>
                         <span className="inline-flex items-center gap-1.5 font-bold text-slate-900 ml-2">
-                          <span className="w-3.5 h-3.5 border border-slate-800 rounded-none inline-flex items-center justify-center p-[2px] bg-white">
-                            {isCash && <span className="w-full h-full bg-slate-900 block" />}
+                          <span className="w-3.5 h-3.5 border border-slate-700 rounded-none inline-flex items-center justify-center p-[2px] bg-white">
+                            {isCash && <span className="w-1.5 h-1.5 bg-slate-900 block" />}
                           </span>
                           <span>CASH</span>
                         </span>
@@ -1296,12 +1308,12 @@ export const FeeReceiptsPage: React.FC = () => {
                       **This is computer generated payment proof, no signature required
                     </div>
                     {/* Divider 1 under payment notice */}
-                    <div className="border-b border-slate-300 mt-2 mb-2" />
+                    <div className="border-b border-slate-300 mt-2 mb-3" />
 
                     {/* 5. REFUND POLICY */}
-                    <div className="mb-2">
+                    <div className="mb-3">
                       <div
-                        className="text-[11px] font-extrabold tracking-wider uppercase mb-0.5"
+                        className="text-[11px] font-extrabold tracking-wider uppercase mb-1"
                         style={{ color: '#C53030' }}
                       >
                         {receiptEditState.refundPolicyTitle}
@@ -1310,45 +1322,55 @@ export const FeeReceiptsPage: React.FC = () => {
                         {receiptEditState.refundPolicyText}
                       </p>
                     </div>
-                    {/* Divider 2 under refund policy matching model PDF */}
-                    <div className="border-b border-slate-300 mt-2 mb-2" />
 
                     {/* 6. FEE STRUCTURE SECTION */}
                     <div>
                       <div
-                        className="text-[11px] font-extrabold tracking-wider uppercase mb-1"
+                        className="text-[11px] font-extrabold tracking-wider uppercase mb-1.5"
                         style={{ color: '#C53030' }}
                       >
                         {receiptEditState.feeStructureTitle}
                       </div>
 
                       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                        {/* Left: Fee Structure Rates Table without inner horizontal dividers (Flexbox) */}
-                        <div className="w-[250px] border-t border-b border-slate-900 text-[9.5px] text-left">
-                          <div className="flex border-b border-slate-900 text-slate-900 font-bold">
-                            <div className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-bold">DURATION</div>
-                            <div className="py-0.5 px-2 w-[47%] font-bold">PRICE</div>
+                        {/* Left: Fee Structure Rates Table with discrete block lines (NO strikethrough bugs) */}
+                        <div className="w-[245px] text-[9.5px] text-left">
+                          {/* Top Border Line */}
+                          <div className="w-full h-[1px] bg-slate-900" />
+
+                          {/* Header */}
+                          <div className="flex h-[20px] items-center text-slate-900 font-bold">
+                            <div className="px-2 w-[54%] border-r border-slate-900 leading-none">DURATION</div>
+                            <div className="px-2 w-[46%] leading-none">PRICE</div>
                           </div>
-                          <div className="flex">
-                            <div className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-medium text-slate-800">1 DAY</div>
-                            <div className="py-0.5 px-2 w-[47%] font-semibold text-slate-900">₹ 500/-</div>
+
+                          {/* Header Divider Line */}
+                          <div className="w-full h-[1px] bg-slate-900" />
+
+                          {/* Rows */}
+                          <div className="flex h-[18px] items-center text-slate-800 font-medium">
+                            <div className="px-2 w-[54%] border-r border-slate-900 leading-none">1 DAY</div>
+                            <div className="px-2 w-[46%] font-semibold text-slate-900 leading-none">₹ 500/-</div>
                           </div>
-                          <div className="flex">
-                            <div className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-medium text-slate-800">2 TO 5 DAYS</div>
-                            <div className="py-0.5 px-2 w-[47%] font-semibold text-slate-900">₹ 350/- Per Day</div>
+                          <div className="flex h-[18px] items-center text-slate-800 font-medium">
+                            <div className="px-2 w-[54%] border-r border-slate-900 leading-none">2 TO 5 DAYS</div>
+                            <div className="px-2 w-[46%] font-semibold text-slate-900 leading-none">₹ 350/- Per Day</div>
                           </div>
-                          <div className="flex">
-                            <div className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-medium text-slate-800">5 TO 10 DAYS</div>
-                            <div className="py-0.5 px-2 w-[47%] font-semibold text-slate-900">₹ 2500/-</div>
+                          <div className="flex h-[18px] items-center text-slate-800 font-medium">
+                            <div className="px-2 w-[54%] border-r border-slate-900 leading-none">5 TO 10 DAYS</div>
+                            <div className="px-2 w-[46%] font-semibold text-slate-900 leading-none">₹ 2500/-</div>
                           </div>
-                          <div className="flex">
-                            <div className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-medium text-slate-800">10 TO 15 DAYS</div>
-                            <div className="py-0.5 px-2 w-[47%] font-semibold text-slate-900">₹ 3500/-</div>
+                          <div className="flex h-[18px] items-center text-slate-800 font-medium">
+                            <div className="px-2 w-[54%] border-r border-slate-900 leading-none">10 TO 15 DAYS</div>
+                            <div className="px-2 w-[46%] font-semibold text-slate-900 leading-none">₹ 3500/-</div>
                           </div>
-                          <div className="flex">
-                            <div className="py-0.5 px-2 border-r border-slate-900 w-[53%] font-medium text-slate-800">15 TO 20 DAYS</div>
-                            <div className="py-0.5 px-2 w-[47%] font-semibold text-slate-900">₹ 4500/-</div>
+                          <div className="flex h-[18px] items-center text-slate-800 font-medium">
+                            <div className="px-2 w-[54%] border-r border-slate-900 leading-none">15 TO 20 DAYS</div>
+                            <div className="px-2 w-[46%] font-semibold text-slate-900 leading-none">₹ 4500/-</div>
                           </div>
+
+                          {/* Bottom Border Line */}
+                          <div className="w-full h-[1px] bg-slate-900" />
                         </div>
 
                         {/* Right: Optional Official Seal & Signature (when toggled on by admin) */}
@@ -1370,7 +1392,7 @@ export const FeeReceiptsPage: React.FC = () => {
                       </div>
 
                       {/* Package Types & Food inclusion notice matching reference */}
-                      <div className="mt-2 text-[10px] leading-tight">
+                      <div className="mt-2.5 text-[10px] leading-tight">
                         <div className="font-extrabold text-slate-900 uppercase tracking-wide">
                           WE OFFER 20 TO 30 DAY PACKAGES IN TWO TYPES
                         </div>
