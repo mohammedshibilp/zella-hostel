@@ -11,7 +11,12 @@ import { Select } from '../../components/Select';
 import { Card } from '../../components/Card';
 import { useToast } from '../../context/ToastContext';
 import { ZellaHostelSeal } from '../../components/ZellaHostelSeal';
+import { WhatsAppIcon } from '../../components/WhatsAppIcon';
 import zellaLogo from '../../assets/zella_logo.png';
+import {
+  normalizePhoneNumber,
+  buildWhatsAppChatUrl,
+} from '../../utils/whatsapp';
 import {
   calculateBillingPeriod,
   getCycleForDate,
@@ -46,6 +51,7 @@ export const FeeReceiptsPage: React.FC = () => {
   const [selectedReceipt, setSelectedReceipt] = useState<FeeReceipt | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
+  const [isSharingWhatsapp, setIsSharingWhatsapp] = useState<boolean>(false);
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [isSavingReceipt, setIsSavingReceipt] = useState<boolean>(false);
 
@@ -392,21 +398,220 @@ export const FeeReceiptsPage: React.FC = () => {
         scrollX: 0,
       });
 
-      // 3. Create exact single-page A4 PDF (210mm x 297mm) matching print copy
+      // 3. Create single-page PDF with exact reference proportions (516.64pt x 568.11pt)
       const pdf = new jsPDF({
-        unit: 'mm',
-        format: 'a4',
+        unit: 'pt',
+        format: [516.64, 568.11],
         orientation: 'portrait',
       });
 
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
-      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+      pdf.addImage(imgData, 'JPEG', 0, 0, 516.64, 568.11);
       pdf.save(filename);
-      success('Receipt PDF downloaded successfully (Exact A4 Print Copy)!');
+      success('Receipt PDF downloaded successfully (Exact Preview Match)!');
     } catch (err) {
       toastError('Failed to generate PDF');
     } finally {
       setIsExportingPdf(false);
+    }
+  };
+
+  const handleShareWhatsApp = async () => {
+    if (!selectedReceipt) return;
+
+    if (!receiptPrintRef.current) {
+      toastError('Receipt preview is not ready. Please try again.');
+      return;
+    }
+
+    // 1. Identify recipient guest strictly from currently selected receipt relationship
+    let targetGuest = selectedReceipt.guest;
+    if (!targetGuest || !targetGuest.contact_no) {
+      targetGuest =
+        guests.find((g) => Number(g.id) === Number(selectedReceipt.guest_id)) || targetGuest;
+    }
+
+    if (!targetGuest?.contact_no && selectedReceipt.guest_id) {
+      try {
+        const fetchedGuest = await guestService.getGuest(selectedReceipt.guest_id);
+        if (fetchedGuest) {
+          targetGuest = fetchedGuest;
+        }
+      } catch (fetchErr) {
+        console.warn('Could not retrieve guest details:', fetchErr);
+      }
+    }
+
+    const rawPhone = targetGuest?.contact_no || selectedReceipt.guest?.contact_no;
+    const phoneResult = normalizePhoneNumber(rawPhone);
+
+    // If the number is invalid or missing, show an error and do not proceed
+    if (!phoneResult.valid) {
+      toastError(
+        phoneResult.error ||
+          "Guest mobile number is missing or invalid. Please update the guest's contact details before sharing the receipt.",
+        "Missing Contact"
+      );
+      return;
+    }
+
+    // Platform detection (Android, iPhone Safari, Windows, PWA standalone)
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+    const isAndroid = /Android/i.test(ua);
+    const isIOS =
+      /iPhone|iPad|iPod/i.test(ua) ||
+      (typeof navigator !== 'undefined' && navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isWindows =
+      /Win/i.test(ua) || (typeof navigator !== 'undefined' && /Win/i.test(navigator.platform || ''));
+    const isPWA =
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true);
+
+    setIsSharingWhatsapp(true);
+    try {
+      const html2canvasModule = await import('html2canvas');
+      const html2canvas = (html2canvasModule.default || html2canvasModule) as unknown as (
+        element: HTMLElement,
+        options?: any
+      ) => Promise<HTMLCanvasElement>;
+      const { jsPDF } = await import('jspdf');
+
+      const cleanReceiptNo = (receiptEditState.receiptNo || selectedReceipt.receipt_no).replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `Zella_Receipt_${cleanReceiptNo}.pdf`;
+
+      // 1. Ensure all custom webfonts are loaded before rendering
+      if (document.fonts) {
+        await document.fonts.ready;
+      }
+
+      // 2. Capture the exact live DOM preview with high resolution (scale: 2.5)
+      const canvas = await html2canvas(receiptPrintRef.current, {
+        scale: 2.5,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        scrollY: 0,
+        scrollX: 0,
+      });
+
+      // 3. Create single-page PDF with exact reference proportions (516.64pt x 568.11pt)
+      const pdf = new jsPDF({
+        unit: 'pt',
+        format: [516.64, 568.11],
+        orientation: 'portrait',
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      pdf.addImage(imgData, 'JPEG', 0, 0, 516.64, 568.11);
+      const pdfBlob: Blob = pdf.output('blob');
+
+      if (!pdfBlob || pdfBlob.size < 500) {
+        throw new Error('Generated PDF document is empty or invalid.');
+      }
+
+      const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+      // 2. Android & iPhone Safari: Native Web Share API Level 2 file sharing
+      let canShareFiles = false;
+      if (
+        typeof navigator !== 'undefined' &&
+        typeof navigator.share === 'function' &&
+        typeof navigator.canShare === 'function'
+      ) {
+        try {
+          canShareFiles = navigator.canShare({ files: [pdfFile] });
+        } catch {
+          canShareFiles = false;
+        }
+      }
+
+      if (canShareFiles && (isAndroid || isIOS)) {
+        try {
+          // Strictly document only: NO text, NO captions
+          await navigator.share({
+            files: [pdfFile],
+          });
+          success(
+            isAndroid
+              ? 'Receipt PDF shared! Select WhatsApp and the customer to send document.'
+              : 'Receipt PDF shared! Choose WhatsApp in the share sheet to send.',
+            'Share Sheet Opened'
+          );
+          return;
+        } catch (shareErr: any) {
+          // Gracefully handle user cancellation/dismissal
+          if (shareErr.name === 'AbortError') {
+            return;
+          }
+          console.warn('Native mobile share failed, falling back to direct chat flow:', shareErr);
+        }
+      }
+
+      // 3. Windows WhatsApp Desktop Companion Check
+      const companion = (window as any).zellaCompanion || (window as any).electronBridge;
+      if (companion && typeof companion.sendWhatsAppDocument === 'function') {
+        try {
+          await companion.sendWhatsAppDocument({
+            phone: phoneResult.normalized,
+            filename: filename,
+            fileBlob: pdfBlob,
+          });
+          success(
+            `Receipt PDF attached for ${targetGuest?.name || 'guest'} via WhatsApp Desktop companion.`,
+            'WhatsApp Desktop'
+          );
+          return;
+        } catch (compErr) {
+          console.warn('Companion app error, falling back to direct chat:', compErr);
+        }
+      }
+
+      // 4. Windows WhatsApp Desktop & WhatsApp Web (Chrome / Edge / Firefox)
+      // Automatically download the generated PDF to the device
+      try {
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = blobUrl;
+        downloadLink.download = filename;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      } catch (dlErr) {
+        console.warn('PDF download link warning:', dlErr);
+      }
+
+      // 5. Open direct WhatsApp chat to the exact guest's mobile number: https://wa.me/91XXXXXXXXXX
+      // Strictly NO text, NO caption, NO prefilled message
+      const waUrl = buildWhatsAppChatUrl(phoneResult.normalized);
+      const waWindow = window.open(waUrl, '_blank', 'noopener,noreferrer');
+      if (!waWindow || waWindow.closed || typeof waWindow.closed === 'undefined') {
+        const link = document.createElement('a');
+        link.href = waUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // 6. Truthful, platform-aware user guidance
+      const platformLabel = isWindows
+        ? isPWA
+          ? 'WhatsApp (PWA)'
+          : 'WhatsApp Desktop / Web'
+        : 'WhatsApp Web';
+
+      success(
+        `Receipt PDF downloaded (${filename}). ${platformLabel} opened directly for ${targetGuest?.name || 'guest'} (${phoneResult.normalized}). Please attach the downloaded PDF and send.`,
+        'WhatsApp Opened'
+      );
+    } catch (err: any) {
+      console.error('Error during WhatsApp receipt sharing:', err);
+      toastError('Failed to prepare receipt PDF for sharing. Please try again.');
+    } finally {
+      setIsSharingWhatsapp(false);
     }
   };
 
@@ -951,19 +1156,19 @@ export const FeeReceiptsPage: React.FC = () => {
 
               {/* Scrollable Container for Mobile Responsiveness */}
               <div className="w-full overflow-x-auto bg-slate-100/70 p-2 sm:p-6 rounded-xl border border-slate-200/80 flex justify-center">
-                {/* Printable Receipt Canvas Matching Exact A4 Print Dimensions (210mm x 297mm) */}
+                {/* Printable Receipt Canvas Matching Reference PDF Exactly (516.64pt x 568.11pt = 688px x 756px) */}
                 <div
                   id="printable-receipt"
                   ref={receiptPrintRef}
                   className="bg-white border border-slate-200 shadow-sm text-slate-900 text-left font-sans shrink-0 select-text flex flex-col justify-between"
                   style={{
-                    width: '210mm',
-                    minWidth: '210mm',
-                    maxWidth: '210mm',
-                    minHeight: '297mm',
-                    maxHeight: '297mm',
+                    width: '688px',
+                    minWidth: '688px',
+                    maxWidth: '688px',
+                    height: '756px',
+                    minHeight: '756px',
+                    maxHeight: '756px',
                     boxSizing: 'border-box',
-                    padding: '15mm 20mm',
                     backgroundColor: '#ffffff',
                     fontFamily:
                       'Montserrat, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
@@ -972,7 +1177,7 @@ export const FeeReceiptsPage: React.FC = () => {
                   }}
                 >
                   {/* Top & Main Content Container with Exact Model Margins */}
-                  <div className="flex-1 flex flex-col justify-between">
+                  <div style={{ padding: '34px 44px 0px 44px' }}>
                     {/* 1. TOP HEADER */}
                     <div className="flex justify-between items-start gap-4">
                       {/* Left: Official Logo & ISO Certification Badge */}
@@ -1228,7 +1433,7 @@ export const FeeReceiptsPage: React.FC = () => {
                   variant="outline"
                   icon={<Printer className="w-4 h-4" />}
                   onClick={handlePrint}
-                  disabled={isExportingPdf}
+                  disabled={isSharingWhatsapp || isExportingPdf}
                   className="w-full sm:w-auto"
                 >
                   Print Receipt
@@ -1238,10 +1443,20 @@ export const FeeReceiptsPage: React.FC = () => {
                   icon={<Download className="w-4 h-4" />}
                   onClick={handleDownloadPdf}
                   isLoading={isExportingPdf}
-                  disabled={isExportingPdf}
+                  disabled={isSharingWhatsapp || isExportingPdf}
                   className="w-full sm:w-auto"
                 >
                   Download PDF
+                </Button>
+                <Button
+                  variant="whatsapp"
+                  icon={<WhatsAppIcon className="w-4 h-4" />}
+                  onClick={handleShareWhatsApp}
+                  isLoading={isSharingWhatsapp}
+                  disabled={isSharingWhatsapp || isExportingPdf}
+                  className="w-full sm:w-auto"
+                >
+                  Share on WhatsApp
                 </Button>
               </div>
             </div>
