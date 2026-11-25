@@ -16,4 +16,9 @@ export const feeReceiptService = {
     const response = await api.post('/fee-receipts', receiptData);
     return response.data;
   },
+
+  async updateReceipt(id: number, receiptData: Partial<FeeReceipt>): Promise<FeeReceipt> {
+    const response = await api.put(`/fee-receipts/${id}`, receiptData);
+    return response.data;
+  },
 };

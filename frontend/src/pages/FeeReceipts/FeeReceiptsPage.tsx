@@ -32,6 +32,15 @@ import {
   CreditCard,
   Tag,
   Clock,
+  MapPin,
+  Mail,
+  Phone,
+  Edit3,
+  Check,
+  RotateCcw,
+  Sliders,
+  X,
+  Save,
 } from 'lucide-react';
 
 export const FeeReceiptsPage: React.FC = () => {
@@ -43,6 +52,25 @@ export const FeeReceiptsPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
   const [isSharingWhatsapp, setIsSharingWhatsapp] = useState<boolean>(false);
+  const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
+  const [isSavingReceipt, setIsSavingReceipt] = useState<boolean>(false);
+
+  const [receiptEditState, setReceiptEditState] = useState({
+    guestName: '',
+    roomNo: '',
+    receiptNo: '',
+    receiptDate: '',
+    description: '',
+    amount: '',
+    paymentMode: 'Cash',
+    transactionDate: '',
+    refundPolicyTitle: 'REFUND POLICY',
+    refundPolicyText:
+      'Refund Policies and Accommodation Charges are Determined Based on the Fee Structure Outlined within Specific Packages. We Ensure Transparency in all terms and Conditions. No Refunds will be issued for Stays of 20 days or more!',
+    feeStructureTitle: 'FEE STRUCTURE',
+    showSealAndSignature: false,
+    redAccent: true,
+  });
 
   const receiptPrintRef = useRef<HTMLDivElement>(null);
 
@@ -102,6 +130,104 @@ export const FeeReceiptsPage: React.FC = () => {
         .catch(() => {});
     }
   }, [selectedReceipt?.id]);
+
+  // Synchronize receipt editor state whenever a receipt is opened or updated
+  useEffect(() => {
+    if (selectedReceipt) {
+      const targetGuest = selectedReceipt.guest;
+      const rawGuestName = targetGuest?.name || 'NAME';
+      const room = selectedReceipt.room_number || targetGuest?.room_number;
+      const bed = targetGuest?.bed_number;
+      const roomStr = room
+        ? bed && bed !== 'Not Assigned'
+          ? `ROOM NO. ${room} - BED ${bed}`
+          : `ROOM NO. ${room}`
+        : 'ROOM NO.';
+
+      const defaultDesc = selectedReceipt.fee_type || 'July Month Rent';
+      const defaultAmt = (selectedReceipt.paid_amount ?? selectedReceipt.amount ?? 0).toLocaleString('en-IN');
+      const recDate = formatDateDMY(selectedReceipt.date) || '01/01/2026';
+
+      setReceiptEditState({
+        guestName: rawGuestName,
+        roomNo: roomStr,
+        receiptNo: selectedReceipt.receipt_no || '1000',
+        receiptDate: recDate,
+        description: defaultDesc,
+        amount: defaultAmt,
+        paymentMode: selectedReceipt.payment_mode || 'Cash',
+        transactionDate: recDate,
+        refundPolicyTitle: 'REFUND POLICY',
+        refundPolicyText:
+          'Refund Policies and Accommodation Charges are Determined Based on the Fee Structure Outlined within Specific Packages. We Ensure Transparency in all terms and Conditions. No Refunds will be issued for Stays of 20 days or more!',
+        feeStructureTitle: 'FEE STRUCTURE',
+        showSealAndSignature: false,
+        redAccent: true,
+      });
+      setIsEditorOpen(false);
+    }
+  }, [selectedReceipt?.id, selectedReceipt?.guest?.id]);
+
+  const handleSaveReceiptEdits = async () => {
+    if (!selectedReceipt) return;
+    setIsSavingReceipt(true);
+    try {
+      const parsedAmount = parseFloat(receiptEditState.amount.replace(/,/g, ''));
+      const updatePayload: Partial<FeeReceipt> = {
+        fee_type: receiptEditState.description,
+        payment_mode:
+          receiptEditState.paymentMode === 'UPI / BANK' ||
+          receiptEditState.paymentMode === 'UPI' ||
+          receiptEditState.paymentMode === 'Bank'
+            ? 'UPI'
+            : 'Cash',
+      };
+      if (!isNaN(parsedAmount) && parsedAmount > 0) {
+        updatePayload.paid_amount = parsedAmount;
+      }
+      const updated = await feeReceiptService.updateReceipt(selectedReceipt.id, updatePayload);
+      setSelectedReceipt((prev) => (prev ? { ...prev, ...updated } : prev));
+      setReceipts((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
+      success('Receipt customization saved successfully!', 'Saved');
+    } catch (err) {
+      console.warn('Failed to save receipt updates:', err);
+      toastError('Could not save to database, but current preview is updated for print & download.');
+    } finally {
+      setIsSavingReceipt(false);
+    }
+  };
+
+  const handleResetReceiptEdits = () => {
+    if (!selectedReceipt) return;
+    const targetGuest = selectedReceipt.guest;
+    const rawGuestName = targetGuest?.name || 'NAME';
+    const room = selectedReceipt.room_number || targetGuest?.room_number;
+    const bed = targetGuest?.bed_number;
+    const roomStr = room
+      ? bed && bed !== 'Not Assigned'
+        ? `ROOM NO. ${room} - BED ${bed}`
+        : `ROOM NO. ${room}`
+      : 'ROOM NO.';
+    const recDate = formatDateDMY(selectedReceipt.date) || '01/01/2026';
+
+    setReceiptEditState({
+      guestName: rawGuestName,
+      roomNo: roomStr,
+      receiptNo: selectedReceipt.receipt_no || '1000',
+      receiptDate: recDate,
+      description: selectedReceipt.fee_type || 'July Month Rent',
+      amount: (selectedReceipt.paid_amount ?? selectedReceipt.amount ?? 0).toLocaleString('en-IN'),
+      paymentMode: selectedReceipt.payment_mode || 'Cash',
+      transactionDate: recDate,
+      refundPolicyTitle: 'REFUND POLICY',
+      refundPolicyText:
+        'Refund Policies and Accommodation Charges are Determined Based on the Fee Structure Outlined within Specific Packages. We Ensure Transparency in all terms and Conditions. No Refunds will be issued for Stays of 20 days or more!',
+      feeStructureTitle: 'FEE STRUCTURE',
+      showSealAndSignature: false,
+      redAccent: true,
+    });
+    success('Receipt fields restored to original database values.');
+  };
 
   const handleResidentChange = (guestId: string) => {
     const selectedGuest = guests.find((g) => g.id.toString() === guestId);
@@ -215,7 +341,7 @@ export const FeeReceiptsPage: React.FC = () => {
     if (!dateStr) return '';
     const parts = dateStr.split('T')[0].split('-');
     if (parts.length === 3 && parts[0].length === 4) {
-      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
     return dateStr;
   };
@@ -249,10 +375,12 @@ export const FeeReceiptsPage: React.FC = () => {
     try {
       const html2pdfModule = await import('html2pdf.js');
       const html2pdf = html2pdfModule.default || html2pdfModule;
+      const cleanReceiptNo = (receiptEditState.receiptNo || selectedReceipt?.receipt_no || 'Fee_Receipt').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `Zella_Receipt_${cleanReceiptNo}.pdf`;
 
       const opt = {
-        margin: [10, 12, 10, 12],
-        filename: `${selectedReceipt?.receipt_no || 'Fee_Receipt'}.pdf`,
+        margin: [6, 8, 6, 8],
+        filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
@@ -330,11 +458,11 @@ export const FeeReceiptsPage: React.FC = () => {
     try {
       const html2pdfModule = await import('html2pdf.js');
       const html2pdf = html2pdfModule.default || html2pdfModule;
-      const cleanReceiptNo = selectedReceipt.receipt_no.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const cleanReceiptNo = (receiptEditState.receiptNo || selectedReceipt.receipt_no).replace(/[^a-zA-Z0-9_-]/g, '_');
       const filename = `Zella_Receipt_${cleanReceiptNo}.pdf`;
 
       const opt = {
-        margin: [10, 12, 10, 12],
+        margin: [6, 8, 6, 8],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
@@ -772,273 +900,519 @@ export const FeeReceiptsPage: React.FC = () => {
       <Modal
         isOpen={!!selectedReceipt}
         onClose={() => setSelectedReceipt(null)}
-        title="Official Fee Receipt Voucher"
-        subtitle={selectedReceipt?.receipt_no}
+        title="Official Proof of Payment"
+        subtitle={receiptEditState.receiptNo || selectedReceipt?.receipt_no}
         maxWidth="3xl"
       >
-        {selectedReceipt && (
-          <div className="flex flex-col gap-5">
-            {/* Scrollable Container for Mobile Responsiveness */}
-            <div className="w-full overflow-x-auto bg-slate-100/70 p-2 sm:p-6 rounded-xl border border-slate-200/80 flex justify-center">
-              {/* Printable Receipt Canvas Matching Reference PDF Exactly */}
-              <div
-                id="printable-receipt"
-                ref={receiptPrintRef}
-                className="w-full max-w-[690px] bg-white border border-slate-200 shadow-sm p-6 sm:p-10 text-slate-800 text-left font-sans shrink-0 select-text"
-                style={{
-                  minWidth: '320px',
-                  fontFamily: 'Montserrat, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                }}
-              >
-                {/* 1. TOP HEADER */}
-                <div className="flex justify-between items-start gap-4">
-                  {/* Left: Official Logo & Address */}
-                  <div>
-                    <img
-                      src={zellaLogo}
-                      alt="Zella Ladies Hostel"
-                      className="h-12 sm:h-14 w-auto object-contain object-left mb-3"
-                    />
-                    <h1 className="text-xs sm:text-sm font-bold tracking-tight text-slate-900 uppercase">
-                      ZELLA LADIES HOSTEL
-                    </h1>
-                    <div className="text-[11px] text-slate-600 leading-snug mt-1">
-                      <p>Musaffa Tower, Opp. Bharat Petroleum, Near Neha Hospital,</p>
-                      <p>Main Road, Kottakkal, Malappuram Dist - 676503</p>
-                      <p className="mt-0.5">Phone: +91 920 7000 923; +91 9207000924</p>
-                    </div>
+        {selectedReceipt && (() => {
+          const isUpiOrBank =
+            receiptEditState.paymentMode.toUpperCase().includes('UPI') ||
+            receiptEditState.paymentMode.toUpperCase().includes('BANK') ||
+            receiptEditState.paymentMode.toUpperCase().includes('ONLINE') ||
+            receiptEditState.paymentMode.toUpperCase().includes('CARD');
+          const isCash =
+            !isUpiOrBank &&
+            (receiptEditState.paymentMode.toUpperCase().includes('CASH') || !receiptEditState.paymentMode);
+
+          return (
+            <div className="flex flex-col gap-4">
+              {/* RECEIPT CUSTOMIZATION & LIVE EDITOR DRAWER */}
+              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditorOpen(!isEditorOpen)}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 ${
+                        isEditorOpen
+                          ? 'bg-primary text-white border-primary shadow-xs'
+                          : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>{isEditorOpen ? 'Hide Receipt Editor' : 'Edit Receipt Fields'}</span>
+                    </button>
+                    <span className="text-[11px] text-slate-500 hidden sm:inline">
+                      Customize red-highlighted fields, text color &amp; stamp before generating PDF
+                    </span>
                   </div>
 
-                  {/* Right: Receipt Heading, Number & Date */}
-                  <div className="text-right shrink-0">
-                    <div className="text-xs sm:text-sm font-bold tracking-wider text-[#0A68A7] uppercase mb-1">
-                      OFFICIAL FEE RECEIPT
-                    </div>
-                    <div className="text-xl sm:text-2xl font-bold tracking-tight text-[#0F172A] mb-1">
-                      {selectedReceipt.receipt_no}
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-medium">
-                      Receipt Date: {formatDateDMY(selectedReceipt.date)}
-                    </div>
+                  {/* Quick Toggles */}
+                  <div className="flex items-center gap-3 text-xs">
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-slate-700 font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={receiptEditState.redAccent}
+                        onChange={(e) =>
+                          setReceiptEditState((prev) => ({ ...prev, redAccent: e.target.checked }))
+                        }
+                        className="rounded border-slate-300 text-rose-600 focus:ring-rose-500 w-3.5 h-3.5"
+                      />
+                      <span className="text-rose-600 font-bold">Red Accent Fields</span>
+                    </label>
+
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-slate-700 font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={receiptEditState.showSealAndSignature}
+                        onChange={(e) =>
+                          setReceiptEditState((prev) => ({
+                            ...prev,
+                            showSealAndSignature: e.target.checked,
+                          }))
+                        }
+                        className="rounded border-slate-300 text-primary focus:ring-primary w-3.5 h-3.5"
+                      />
+                      <span>Include Seal &amp; Signature</span>
+                    </label>
                   </div>
                 </div>
 
-                {/* Horizontal Divider */}
-                <div className="border-b border-slate-200 my-5" />
-
-                {/* 2. RECEIPT & PAYMENT METADATA */}
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-xs mb-5">
-                  <div className="flex items-baseline">
-                    <span className="w-36 font-semibold text-slate-700 shrink-0">Receipt No:</span>
-                    <span className="text-slate-900 font-medium">{selectedReceipt.receipt_no}</span>
-                  </div>
-                  <div className="flex items-baseline">
-                    <span className="w-28 font-semibold text-slate-700 shrink-0">Receipt Date:</span>
-                    <span className="text-slate-900 font-medium">{formatDateDMY(selectedReceipt.date)}</span>
-                  </div>
-                  <div className="flex items-baseline">
-                    <span className="w-36 font-semibold text-slate-700 shrink-0 leading-tight">
-                      Payment<br />Transaction:
-                    </span>
-                    <span className="text-slate-900 font-medium">
-                      {selectedReceipt.payment_reference || selectedReceipt.fee_type || 'Hostel Fee Payment'}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline">
-                    <span className="w-28 font-semibold text-slate-700 shrink-0">Payment Mode:</span>
-                    <span className="text-slate-900 font-medium">{selectedReceipt.payment_mode}</span>
-                  </div>
-                </div>
-
-                {/* 3. RECEIVED FROM GUEST INFORMATION */}
-                <div className="mb-5">
-                  <div className="text-xs font-bold text-slate-900 mb-2">
-                    Received From:
-                  </div>
-                  <div className="space-y-1.5 text-xs">
-                    <div className="flex items-baseline">
-                      <span className="w-28 font-medium text-slate-600 shrink-0">Name:</span>
-                      <span className="text-slate-900 font-semibold">{selectedReceipt.guest?.name || 'Resident'}</span>
-                    </div>
-                    {selectedReceipt.guest?.email && (
-                      <div className="flex items-baseline">
-                        <span className="w-28 font-medium text-slate-600 shrink-0">Email:</span>
-                        <span className="text-slate-800 font-normal">{selectedReceipt.guest.email}</span>
+                {/* Collapsible Edit Form */}
+                {isEditorOpen && (
+                  <div className="p-4 bg-slate-50/60 border-b border-slate-200 animate-fade-in text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {/* Red Field: Guest Name */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-rose-600 uppercase mb-1">
+                          Resident Name (Red Field)
+                        </label>
+                        <input
+                          type="text"
+                          value={receiptEditState.guestName}
+                          onChange={(e) =>
+                            setReceiptEditState((prev) => ({ ...prev, guestName: e.target.value }))
+                          }
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 font-bold text-slate-800"
+                          placeholder="e.g. MOHAMMED"
+                        />
                       </div>
-                    )}
-                    <div className="flex items-baseline">
-                      <span className="w-28 font-medium text-slate-600 shrink-0">Mobile:</span>
-                      <span className="text-slate-800 font-normal">{selectedReceipt.guest?.contact_no || 'N/A'}</span>
-                    </div>
-                    <div className="flex items-baseline">
-                      <span className="w-28 font-medium text-slate-600 shrink-0">Room &amp; Bed:</span>
-                      <span className="text-slate-800 font-normal">{formatRoomBed(selectedReceipt)}</span>
-                    </div>
-                    <div className="flex items-baseline">
-                      <span className="w-28 font-medium text-slate-600 shrink-0">Package:</span>
-                      <span className="text-slate-800 font-normal">{formatPackage(selectedReceipt)}</span>
+
+                      {/* Red Field: Room No */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-rose-600 uppercase mb-1">
+                          Room / Bed No (Red Field)
+                        </label>
+                        <input
+                          type="text"
+                          value={receiptEditState.roomNo}
+                          onChange={(e) =>
+                            setReceiptEditState((prev) => ({ ...prev, roomNo: e.target.value }))
+                          }
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 font-bold text-slate-800"
+                          placeholder="e.g. ROOM NO. 101 - BED A"
+                        />
+                      </div>
+
+                      {/* Red Field: Description */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-rose-600 uppercase mb-1">
+                          Description (Red Field)
+                        </label>
+                        <input
+                          type="text"
+                          value={receiptEditState.description}
+                          onChange={(e) =>
+                            setReceiptEditState((prev) => ({ ...prev, description: e.target.value }))
+                          }
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 font-bold text-slate-800"
+                          placeholder="e.g. July Month Rent"
+                        />
+                      </div>
+
+                      {/* Red Field: Amount */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-rose-600 uppercase mb-1">
+                          Amount Collected (₹) (Red Field)
+                        </label>
+                        <input
+                          type="text"
+                          value={receiptEditState.amount}
+                          onChange={(e) =>
+                            setReceiptEditState((prev) => ({ ...prev, amount: e.target.value }))
+                          }
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 font-bold text-slate-800"
+                          placeholder="e.g. 5,500"
+                        />
+                      </div>
+
+                      {/* Receipt No */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                          Receipt No
+                        </label>
+                        <input
+                          type="text"
+                          value={receiptEditState.receiptNo}
+                          onChange={(e) =>
+                            setReceiptEditState((prev) => ({ ...prev, receiptNo: e.target.value }))
+                          }
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium text-slate-800"
+                        />
+                      </div>
+
+                      {/* Receipt Date */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                          Receipt Date
+                        </label>
+                        <input
+                          type="text"
+                          value={receiptEditState.receiptDate}
+                          onChange={(e) =>
+                            setReceiptEditState((prev) => ({ ...prev, receiptDate: e.target.value }))
+                          }
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium text-slate-800"
+                          placeholder="DD/MM/YYYY"
+                        />
+                      </div>
+
+                      {/* Transaction Date */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                          Transaction Date
+                        </label>
+                        <input
+                          type="text"
+                          value={receiptEditState.transactionDate}
+                          onChange={(e) =>
+                            setReceiptEditState((prev) => ({ ...prev, transactionDate: e.target.value }))
+                          }
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium text-slate-800"
+                          placeholder="DD/MM/YYYY"
+                        />
+                      </div>
+
+                      {/* Mode of Payment */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                          Mode of Payment
+                        </label>
+                        <select
+                          value={receiptEditState.paymentMode}
+                          onChange={(e) =>
+                            setReceiptEditState((prev) => ({ ...prev, paymentMode: e.target.value }))
+                          }
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium text-slate-800"
+                        >
+                          <option value="Cash">CASH</option>
+                          <option value="UPI">UPI / BANK</option>
+                          <option value="Bank">BANK TRANSFER</option>
+                          <option value="Card">CARD</option>
+                        </select>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="sm:col-span-2 md:col-span-1 flex items-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleSaveReceiptEdits}
+                          disabled={isSavingReceipt}
+                          className="flex-1 px-3 py-1.5 text-xs font-bold text-white bg-primary hover:bg-primary-600 rounded-lg flex items-center justify-center gap-1 transition-colors shadow-xs"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                          <span>{isSavingReceipt ? 'Saving...' : 'Save Changes'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleResetReceiptEdits}
+                          className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg flex items-center justify-center gap-1 transition-colors"
+                          title="Reset to database values"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Reset</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+              </div>
 
-                {/* 4. PROFESSIONAL PAYMENT TABLE WITH BLUE HEADER */}
-                <div className="border border-slate-200 overflow-hidden mb-5">
-                  <table className="w-full text-xs text-left border-collapse">
-                    <thead>
-                      <tr className="bg-[#0A68A7] text-white">
-                        <th className="py-2.5 px-4 font-semibold text-left w-[46%]">
-                          Nature of Service
-                        </th>
-                        <th className="py-2.5 px-4 font-semibold text-left w-[32%]">
-                          Billing Period
-                        </th>
-                        <th className="py-2.5 px-4 font-semibold text-right w-[22%]">
-                          Amount Collected (INR)
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
-                      <tr>
-                        <td className="py-3 px-4 text-slate-900 font-medium">
-                          {selectedReceipt.fee_type || 'Hostel Accommodation Fee'}
-                        </td>
-                        <td className="py-3 px-4 text-slate-600 font-normal">
-                          {formatBillingPeriod(selectedReceipt)}
-                        </td>
-                        <td className="py-3 px-4 text-right font-bold text-slate-900">
-                          ₹ {selectedReceipt.amount.toLocaleString('en-IN')}
-                        </td>
-                      </tr>
-                      {selectedReceipt.discount ? (
-                        <tr className="bg-slate-50/50">
-                          <td className="py-2 px-4 text-slate-600 font-normal">
-                            Discount / Concession Applied
+              {/* Scrollable Container for Mobile Responsiveness */}
+              <div className="w-full overflow-x-auto bg-slate-100/70 p-2 sm:p-6 rounded-xl border border-slate-200/80 flex justify-center">
+                {/* Printable Receipt Canvas Matching Reference PDF Exactly */}
+                <div
+                  id="printable-receipt"
+                  ref={receiptPrintRef}
+                  className="w-full max-w-[690px] bg-white border border-slate-200 shadow-sm text-slate-900 text-left font-sans shrink-0 select-text overflow-hidden"
+                  style={{
+                    padding: '36px 36px 0px 36px',
+                    minWidth: '320px',
+                    backgroundColor: '#ffffff',
+                    fontFamily:
+                      'Montserrat, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                  }}
+                >
+                  {/* 1. TOP HEADER */}
+                  <div className="flex justify-between items-start gap-4">
+                    {/* Left: Official Logo & ISO Certification Badge */}
+                    <div className="flex flex-col items-start">
+                      <img
+                        src={zellaLogo}
+                        alt="Zella Ladies Hostel"
+                        className="h-12 sm:h-14 w-auto object-contain object-left mb-1.5"
+                      />
+                      <div className="inline-block bg-[#0B1A42] text-white text-[9px] font-bold tracking-wider px-2.5 py-0.5 rounded-xs uppercase">
+                        An ISO 9001 - 2015 Certified Hostel
+                      </div>
+                    </div>
+
+                    {/* Right: Contact Information */}
+                    <div className="flex flex-col items-start gap-1 text-[11px] text-slate-800">
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-slate-800 shrink-0" />
+                        <span className="font-medium">Opp. Bharat Petroleum, Kottakkal</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-slate-800 shrink-0" />
+                        <span className="font-medium">zellahostel@gmail.com</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-slate-800 shrink-0" />
+                        <span className="font-bold text-slate-900">9645 7000 27 | 9645 7000 28</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. TITLE & RECEIVED FROM METADATA */}
+                  <div className="mt-8 flex justify-between items-start gap-4">
+                    {/* Left: RECEIVED FROM & Red-highlighted Dynamic Fields */}
+                    <div>
+                      <div className="text-xs font-bold text-slate-700 tracking-wider uppercase mb-1">
+                        RECEIVED FROM
+                      </div>
+                      <div
+                        className="text-sm font-extrabold uppercase tracking-wide leading-tight"
+                        style={{ color: receiptEditState.redAccent ? '#C53030' : '#1E293B' }}
+                      >
+                        {receiptEditState.guestName}
+                      </div>
+                      <div
+                        className="text-xs font-bold uppercase tracking-wide mt-1"
+                        style={{ color: receiptEditState.redAccent ? '#C53030' : '#1E293B' }}
+                      >
+                        {receiptEditState.roomNo}
+                      </div>
+                    </div>
+
+                    {/* Right: Proof of Payment & Receipt Details */}
+                    <div className="text-right shrink-0">
+                      <div className="text-2xl sm:text-[26px] font-extrabold text-[#2D3748] tracking-tight leading-none mb-2">
+                        Proof of Payment
+                      </div>
+                      <div className="text-xs font-semibold text-slate-800">
+                        <span className="font-bold text-slate-900">No. : </span>
+                        {receiptEditState.receiptNo}
+                      </div>
+                      <div className="text-xs font-semibold text-slate-800 mt-1">
+                        <span className="font-bold text-slate-900">Date : </span>
+                        {receiptEditState.receiptDate}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. MAIN PAYMENT TABLE (DESCRIPTION | AMOUNT) */}
+                  <div className="mt-6 border-t-2 border-b border-slate-900 overflow-hidden">
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-900 text-slate-900">
+                          <th className="py-2.5 px-3 font-extrabold uppercase tracking-wider text-left border-r border-slate-900 w-[78%]">
+                            DESCRIPTION
+                          </th>
+                          <th className="py-2.5 px-3 font-extrabold uppercase tracking-wider text-right w-[22%]">
+                            AMOUNT
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="min-h-[55px]">
+                          <td className="py-6 px-3 border-r border-slate-900 align-middle">
+                            <span
+                              className="text-sm sm:text-base font-bold"
+                              style={{ color: receiptEditState.redAccent ? '#C53030' : '#1E293B' }}
+                            >
+                              {receiptEditState.description}
+                            </span>
                           </td>
-                          <td className="py-2 px-4 text-slate-500 font-normal">
-                            Special Offer
-                          </td>
-                          <td className="py-2 px-4 text-right font-semibold text-rose-600">
-                            - ₹ {selectedReceipt.discount.toLocaleString('en-IN')}
+                          <td className="py-6 px-3 text-right align-middle">
+                            <span
+                              className="text-sm sm:text-base font-bold"
+                              style={{ color: receiptEditState.redAccent ? '#C53030' : '#1E293B' }}
+                            >
+                              ₹{receiptEditState.amount}
+                            </span>
                           </td>
                         </tr>
-                      ) : null}
-                    </tbody>
-                  </table>
-                </div>
+                      </tbody>
+                    </table>
+                  </div>
 
-                {/* 5. FINANCIAL SUMMARY */}
-                <div className="space-y-1.5 text-xs mb-6">
-                  <div className="flex items-center">
-                    <span className="w-40 text-slate-700 font-normal">Total Fee</span>
-                    <span className="w-4 text-slate-500 text-center">:</span>
-                    <span className="font-semibold text-slate-900 pl-1">
-                      ₹ {selectedReceipt.amount.toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="w-40 text-slate-700 font-normal">Amount Received</span>
-                    <span className="w-4 text-slate-500 text-center">:</span>
-                    <span className="font-semibold text-slate-900 pl-1">
-                      ₹ {(selectedReceipt.paid_amount ?? selectedReceipt.amount).toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                  {selectedReceipt.discount ? (
-                    <div className="flex items-center">
-                      <span className="w-40 text-slate-700 font-normal">Offer Applied / Discount</span>
-                      <span className="w-4 text-slate-500 text-center">:</span>
-                      <span className="font-semibold text-rose-600 pl-1">
-                        ₹ {selectedReceipt.discount.toLocaleString('en-IN')}
+                  {/* 4. MODE OF PAYMENT & TRANSACTION DATE */}
+                  <div className="mt-4 flex flex-wrap justify-between items-center gap-2 text-xs">
+                    <div className="flex items-center gap-3">
+                      <span className="font-extrabold text-slate-900 tracking-wider uppercase">
+                        MODE OF PAYMENT
                       </span>
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
+                        <span className="w-3.5 h-3.5 border border-slate-900 inline-flex items-center justify-center text-[10px] font-black">
+                          {isUpiOrBank ? '✓' : ''}
+                        </span>
+                        <span>UPI / BANK</span>
+                      </label>
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer font-bold text-slate-800 ml-1">
+                        <span className="w-3.5 h-3.5 border border-slate-900 inline-flex items-center justify-center text-[10px] font-black">
+                          {isCash ? '✓' : ''}
+                        </span>
+                        <span>CASH</span>
+                      </label>
                     </div>
-                  ) : null}
-                  {selectedReceipt.balance_amount && selectedReceipt.balance_amount > 0 ? (
-                    <div className="flex items-center">
-                      <span className="w-40 text-slate-700 font-normal">Balance Amount Payable</span>
-                      <span className="w-4 text-slate-500 text-center">:</span>
-                      <span className="font-semibold text-rose-600 pl-1">
-                        ₹ {selectedReceipt.balance_amount.toLocaleString('en-IN')}
-                      </span>
+                    <div className="font-extrabold text-slate-900 tracking-wider uppercase">
+                      TRANSACTION DATE &nbsp; {receiptEditState.transactionDate}
                     </div>
-                  ) : null}
-                  <div className="flex items-center">
-                    <span className="w-40 text-slate-700 font-normal">Payment Status</span>
-                    <span className="w-4 text-slate-500 text-center">:</span>
-                    <span className="font-bold text-emerald-700 uppercase pl-1 tracking-wide">
-                      {selectedReceipt.balance_amount && selectedReceipt.balance_amount > 0
-                        ? 'PARTIALLY PAID'
-                        : 'PAID / SETTLED'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 6. RECEIPT NOTE */}
-                <div className="mb-8">
-                  <div className="text-xs font-bold text-slate-900 mb-1">
-                    Receipt Note:
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed max-w-xl">
-                    {selectedReceipt.remarks ||
-                      'This document acknowledges receipt of the amount stated above for the hostel accommodation fee. Please retain this receipt for your records.'}
-                  </p>
-                </div>
-
-                {/* 7. BOTTOM SECTION: SEAL (BOTTOM-LEFT) & SIGNATORY (BOTTOM-RIGHT) ON EXACT SAME HORIZONTAL BASELINE */}
-                <div className="flex items-end justify-between pt-4 mt-6">
-                  {/* Bottom-Left: Circular Blue Stamp */}
-                  <div className="flex flex-col items-start select-none">
-                    <ZellaHostelSeal className="w-24 h-24" />
                   </div>
 
-                  {/* Bottom-Right: Authorized Signatory */}
-                  <div className="text-right">
-                    <div className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                      AUTHORIZED SIGNATORY
+                  {/* Computer-generated payment notice matching reference */}
+                  <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium text-center sm:text-right mt-3">
+                    **This is computer generated payment proof, no signature required
+                  </div>
+                  <div className="border-b border-slate-200 mt-2.5 mb-4" />
+
+                  {/* 5. REFUND POLICY */}
+                  <div className="mb-4">
+                    <div
+                      className="text-xs sm:text-sm font-extrabold tracking-wider uppercase mb-1"
+                      style={{ color: '#C53030' }}
+                    >
+                      {receiptEditState.refundPolicyTitle}
                     </div>
-                    <div className="text-xs font-semibold text-slate-700 mt-1">
-                      Zella Ladies Hostel Administration
+                    <p className="text-[10.5px] sm:text-[11.5px] text-slate-700 leading-relaxed font-normal whitespace-pre-line">
+                      {receiptEditState.refundPolicyText}
+                    </p>
+                  </div>
+
+                  {/* 6. FEE STRUCTURE SECTION */}
+                  <div>
+                    <div
+                      className="text-xs sm:text-sm font-extrabold tracking-wider uppercase mb-1.5"
+                      style={{ color: '#C53030' }}
+                    >
+                      {receiptEditState.feeStructureTitle}
                     </div>
-                    <div className="text-[10px] text-slate-400 italic mt-0.5">
-                      Computer-generated receipt
+
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                      {/* Left: Fee Structure Rates Table */}
+                      <div className="w-full sm:w-[50%] max-w-[340px] border-t border-b border-slate-900">
+                        <table className="w-full text-[10.5px] text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-900 text-slate-900 font-bold">
+                              <th className="py-1 px-2.5 border-r border-slate-900 w-[55%] font-bold">DURATION</th>
+                              <th className="py-1 px-2.5 w-[45%] font-bold">PRICE</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            <tr>
+                              <td className="py-0.5 px-2.5 border-r border-slate-900 font-medium text-slate-800">1 DAY</td>
+                              <td className="py-0.5 px-2.5 font-semibold text-slate-900">₹ 500/-</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5 px-2.5 border-r border-slate-900 font-medium text-slate-800">2 TO 5 DAYS</td>
+                              <td className="py-0.5 px-2.5 font-semibold text-slate-900">₹ 350/- Per Day</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5 px-2.5 border-r border-slate-900 font-medium text-slate-800">5 TO 10 DAYS</td>
+                              <td className="py-0.5 px-2.5 font-semibold text-slate-900">₹ 2500/-</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5 px-2.5 border-r border-slate-900 font-medium text-slate-800">10 TO 15 DAYS</td>
+                              <td className="py-0.5 px-2.5 font-semibold text-slate-900">₹ 3500/-</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5 px-2.5 border-r border-slate-900 font-medium text-slate-800">15 TO 20 DAYS</td>
+                              <td className="py-0.5 px-2.5 font-semibold text-slate-900">₹ 4500/-</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Right: Optional Official Seal & Signature (when toggled on by admin) */}
+                      {receiptEditState.showSealAndSignature && (
+                        <div className="w-full sm:w-[45%] flex items-end justify-between pt-1 self-stretch">
+                          <div className="flex flex-col items-center">
+                            <ZellaHostelSeal className="w-20 h-20" />
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-900">
+                              AUTHORIZED SIGNATORY
+                            </div>
+                            <div className="text-[10px] font-semibold text-slate-700 mt-0.5">
+                              Zella Ladies Hostel Administration
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Package Types & Food inclusion notice matching reference */}
+                    <div className="mt-3 text-[11px] leading-tight">
+                      <div className="font-extrabold text-slate-900 uppercase tracking-wide">
+                        WE OFFER 20 TO 30 DAY PACKAGES IN TWO TYPES
+                      </div>
+                      <div className="font-bold text-slate-900 mt-0.5">
+                        ₹ 5000/- (Upper Bed) &nbsp; | &nbsp; ₹ 5500/- (Bottom Bed)
+                      </div>
+                      <div className="font-extrabold text-[#D81B60] uppercase tracking-wide mt-0.5">
+                        ALL PACKAGES INCLUDE FOUR TIMES FOOD A DAY
+                      </div>
                     </div>
                   </div>
+
+                  {/* 7. BOTTOM ACCENT BAR */}
+                  <div
+                    className="w-full h-3 bg-[#D81B60] mt-7"
+                    style={{
+                      marginLeft: '-36px',
+                      marginRight: '-36px',
+                      width: 'calc(100% + 72px)',
+                    }}
+                  />
                 </div>
               </div>
-            </div>
 
-            {/* Bottom Modal Actions */}
-            <div className="flex flex-col-reverse sm:flex-row flex-wrap items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-2">
-              <Button
-                variant="outline"
-                icon={<Printer className="w-4 h-4" />}
-                onClick={handlePrint}
-                disabled={isSharingWhatsapp || isExportingPdf}
-                className="w-full sm:w-auto"
-              >
-                Print Receipt
-              </Button>
-              <Button
-                variant="primary"
-                icon={<Download className="w-4 h-4" />}
-                onClick={handleDownloadPdf}
-                isLoading={isExportingPdf}
-                disabled={isSharingWhatsapp || isExportingPdf}
-                className="w-full sm:w-auto"
-              >
-                Download PDF
-              </Button>
-              <Button
-                variant="whatsapp"
-                icon={<WhatsAppIcon className="w-4 h-4" />}
-                onClick={handleShareWhatsApp}
-                isLoading={isSharingWhatsapp}
-                disabled={isSharingWhatsapp || isExportingPdf}
-                className="w-full sm:w-auto"
-              >
-                Share on WhatsApp
-              </Button>
+              {/* Bottom Modal Actions */}
+              <div className="flex flex-col-reverse sm:flex-row flex-wrap items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  icon={<Printer className="w-4 h-4" />}
+                  onClick={handlePrint}
+                  disabled={isSharingWhatsapp || isExportingPdf}
+                  className="w-full sm:w-auto"
+                >
+                  Print Receipt
+                </Button>
+                <Button
+                  variant="primary"
+                  icon={<Download className="w-4 h-4" />}
+                  onClick={handleDownloadPdf}
+                  isLoading={isExportingPdf}
+                  disabled={isSharingWhatsapp || isExportingPdf}
+                  className="w-full sm:w-auto"
+                >
+                  Download PDF
+                </Button>
+                <Button
+                  variant="whatsapp"
+                  icon={<WhatsAppIcon className="w-4 h-4" />}
+                  onClick={handleShareWhatsApp}
+                  isLoading={isSharingWhatsapp}
+                  disabled={isSharingWhatsapp || isExportingPdf}
+                  className="w-full sm:w-auto"
+                >
+                  Share on WhatsApp
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </Modal>
     </div>
   );

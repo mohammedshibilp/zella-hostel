@@ -20,6 +20,20 @@ class FeeReceiptCreate(BaseModel):
     remarks: Optional[str] = None
 
 
+class FeeReceiptUpdate(BaseModel):
+    date: Optional[dt_date] = None
+    fee_type: Optional[str] = None
+    amount: Optional[float] = None
+    discount: Optional[float] = None
+    paid_amount: Optional[float] = None
+    balance_amount: Optional[float] = None
+    payment_mode: Optional[str] = None
+    payment_reference: Optional[str] = None
+    period_start: Optional[dt_date] = None
+    period_end: Optional[dt_date] = None
+    remarks: Optional[str] = None
+
+
 class FeeReceiptResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

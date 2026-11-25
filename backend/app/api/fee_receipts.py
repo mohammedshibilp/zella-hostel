@@ -8,7 +8,7 @@ from app.models.user import User
 from app.models.guest import Guest
 from app.models.admission import Admission
 from app.models.finance import FeeReceipt, AccountTransaction
-from app.schemas.finance import FeeReceiptCreate, FeeReceiptResponse
+from app.schemas.finance import FeeReceiptCreate, FeeReceiptResponse, FeeReceiptUpdate
 from app.utils.billing import calculate_cycle_for_date, calculate_billing_period
 
 router = APIRouter(prefix="/fee-receipts", tags=["Fee Receipts"])
@@ -92,6 +92,26 @@ def get_fee_receipt(
     receipt = db.query(FeeReceipt).filter(FeeReceipt.id == receipt_id).first()
     if not receipt:
         raise HTTPException(status_code=404, detail="Fee receipt not found")
+    return serialize_receipt(receipt, db)
+
+
+@router.put("/{receipt_id}", response_model=FeeReceiptResponse)
+def update_fee_receipt(
+    receipt_id: int,
+    receipt_in: FeeReceiptUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_staff_or_admin)
+):
+    receipt = db.query(FeeReceipt).filter(FeeReceipt.id == receipt_id).first()
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Fee receipt not found")
+
+    update_data = receipt_in.model_dump(exclude_unset=True)
+    for field, val in update_data.items():
+        setattr(receipt, field, val)
+
+    db.commit()
+    db.refresh(receipt)
     return serialize_receipt(receipt, db)
 
 

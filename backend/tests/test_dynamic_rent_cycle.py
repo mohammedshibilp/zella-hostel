@@ -267,6 +267,22 @@ def test_dynamic_room_rent_and_admission_cycle(admin_headers, staff_headers):
         # Billing period automatically generated from guest's check-in date
         assert receipt["period_start"] == "2026-11-22"
         assert receipt["period_end"] == "2026-12-21"
+
+        # Test updating receipt details via PUT endpoint
+        update_res = client.put(
+            f"{settings.API_V1_STR}/fee-receipts/{receipt['id']}",
+            json={
+                "fee_type": "July Month Rent",
+                "paid_amount": 5500.0,
+                "payment_mode": "Cash",
+            },
+            headers=staff_headers,
+        )
+        assert update_res.status_code == 200
+        updated_rec = update_res.json()
+        assert updated_rec["fee_type"] == "July Month Rent"
+        assert updated_rec["paid_amount"] == 5500.0
+        assert updated_rec["payment_mode"] == "Cash"
     finally:
         # Teardown: Clean up test rooms and associated records
         db = SessionLocal()
